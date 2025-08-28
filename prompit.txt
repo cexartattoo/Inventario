@@ -1,0 +1,88 @@
+
+Quiero que generes el código completo de un asistente de voz para gestión de inventario con las siguientes características:
+Nombre editable
+* El nombre del almacén debe leerse desde una variable de entorno (WAREHOUSE_NAME), por defecto "TorniCars".
+Funcionalidades principales
+1. Gestión de inventario con base de datos SQL:
+   * Agregar productos con los siguientes campos:
+      * nombre (sirve para búsqueda)
+      * descripción (sirve para búsqueda tambien)
+      * precio de venta
+      * precio del proveedor (dato privado, no aparece en facturas)
+      * cantidad
+      * ubicación física (ejemplo: "Estante A, Fila 1, Columna 3" o "Cajón 1-3 del Estante B").
+   * Buscar productos por nombre o descripción.
+   * Actualizar cantidades y precios.
+   es importante que si voy a agregar un producto que ya existe la ia me diga oye pero ya tiene un producto con ese nombre deseas agregarle entonces al stok?
+   o si por ejemplo le digo agregale a tal produto tanta cantidad de unidades pues que lo peuda ahcer
+   que al momento de facturar descuente del inventario
+   que cada item tenga un nombre y una referencia numerica organizada segun su creacian siendo el primer item la ref. 1.
+   que si ordeno un tonillo m5 revise en la losta de nombres si hay alguno similar porque peude que esté no se con mayuscula o que diga tornillos en plural cosas asi tener en cuenta eso para el indexado
+2. Facturación:
+   * Permitir crear facturas indicando:
+      * productos + cantidades
+      * nombre del cliente
+      * número de contacto
+      * correo electrónico
+   * Si algún dato obligatorio no está, el asistente debe preguntar al usuario para completarlo.
+   * Calcular el valor total automáticamente.
+   * Generar una factura con formato estándar (empresa, NIT, fecha, productos, cantidades, precios unitarios, subtotal, IVA, total).
+   * Enviar la factura a la impresora.
+   incluir el nit e informacion normal de ina factura esta información se edita en variables en configuración
+   que tenga sujerencias de autocompletado para la facturación manual
+3. Asistente de voz con LLM:
+   * Reconocimiento de voz (input).
+   * Conversación fluida en español latino.
+   * El asistente habla en voz alta (text-to-speech).
+   * El LLM gestiona los flujos conversacionales (ejemplo: si falta un dato en la factura, debe preguntar).
+   usar un modelo de respuesta rapida y apropiado
+   el modelo extrae los datos y el tipo de comando y se comunica usando formato JSON y tambien pues el mensaje que ahce parte de la conversación... pensaba en enviarle un prompit con la estructura y el mensaje del usuario para que se mantenga pues el formato en todas las respuestas de la ia
+   {
+      "comando": "agregar item"
+      "cantidad": 10,
+      "articulo": "tornillos",
+      "estante": "A"
+   }
+   de esta manera el llm se encargaria de decirle a python que funcion ejecutar y en caso de que sean varios items o cosa asi pues hacerlo o si por ejemplo hace falta informacion importante en algun proceso peus que no ejecute el comando hasta tener la informacion completa osea le preguntaria de nuevo al usuario por la informacion que falta sin entrar en bucles si el usuario no es claro pues simplemnte continua normal o si falta que no es importante se deja como espacio vacio para llenar o modificar despues como peude ser la descipcion o la ubicación o el precio... o bueno cuando se haga la factura de un item que está incompleto le podria preguntar al usuiario que si desea agregar la informacion inportante faltante como peude ser el precio final del producto para poder hacer la facturación o tambien las cantidades
+   si hace falta informacion el llm no enviaría comando ya que con falta de informacion no se podria por ejemplo crear un producto nuevo o vender algo creando una factura
+   debe rconocer comandos como vender tornillos M5 y el sisme busca en el inventario la referencia y extrae los datos y como falta la cantidad y el cliente o cosas asi pues el chat le regunta por estos datos faltantes, una vez con todo lo necesario ahi si envia el comando en formato json con toda la info
+Interfaz web
+* Debe tener una interfaz amigable con:
+   * Panel de inventario (lista, búsqueda, edición).
+   * Panel de facturación.
+   * Consola de conversación con el asistente de voz. (botón para hablar similar al comportamiento de whatsaap)
+* Todo el frontend debe comunicarse con un backend (Flask o FastAPI recomendado).
+Requisitos técnicos
+* Backend: Python (Flask o FastAPI).
+* Base de datos: SQLite (simple para pruebas).
+* Frontend: HTML/JS (puedes usar Bootstrap para estilo). colores profecionales limpios, de preferencia sencillos
+* Voz:
+   * Reconocimiento: Web Speech API o SpeechRecognition en Python.
+   * Síntesis: gTTS o pyttsx3 en Python, o SpeechSynthesis API en el navegador.
+* Uso de un LLM conectado al backend para la lógica conversacional (usando gemini APIkey:AIzaSyBfh4KHMVFReXMn94kfqLUg8XoZ3PIBx4Q ).
+Objetivo final
+Quiero un proyecto modular con al menos estos archivos:
+* app.py → servidor principal (Flask o FastAPI).
+* db.py → conexión y modelos SQL.
+* inventory.py → funciones para gestionar inventario.
+* billing.py → funciones para facturación.
+* assistant.py → lógica del asistente con LLM.
+* templates/ → HTML para interfaz web.
+* static/ → JS y CSS para frontend (incluyendo reconocimiento de voz y síntesis).
+👉 Dame el código completo y funcional listo para ejecutar.
+comandos para crear la estructura de carpetas y archivos en windows
+mkdir templates
+mkdir static
+mkdir static\css
+mkdir static\js
+
+type nul > app.py
+type nul > db.py
+type nul > inventory.py
+type nul > billing.py
+type nul > assistant.py
+type nul > requirements.txt
+type nul > .env
+type nul > templates\index.html
+type nul > static\css\style.css
+type nul > static\js\main.js
