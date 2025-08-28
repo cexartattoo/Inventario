@@ -1,341 +1,177 @@
-from flask import Flask, request, jsonify, render_template, send_file
-from flask_cors import CORS
-from flask_socketio import SocketIO
 import os
+import json
+from flask import Flask, render_template, request, jsonify, g
 from dotenv import load_dotenv
-from db import init_db
-from inventory import InventoryManager
-from billing import BillingManager
-from assistant import VoiceAssistant
+import db
+import inventory
+import billing
+import assistant
 
-# Cargar variables de entorno
 load_dotenv()
-
-# Inicializar Flask
 app = Flask(__name__)
-CORS(app)
+app.config['STATIC_FOLDER'] = 'static'
 
-# Configurar la clave secreta
-app.config['SECRET_KEY'] = 'tu_clave_secreta_aqui'
-socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Inicializar managers
-inventory_manager = InventoryManager()
-billing_manager = BillingManager()
-voice_assistant = VoiceAssistant()
+@app.before_request
+def before_request():
+    g.db_conn = db.get_db_connection()
 
-# Inicializar base de datos
-init_db()
+
+@app.teardown_request
+def teardown_request(exception):
+    db_conn = g.pop('db_conn', None)
+    if db_conn is not None:
+        db_conn.close()
 
 
 @app.route('/')
 def index():
-    """Página principal"""
-    return render_template('index.html')
+    warehouse_name = os.getenv('WAREHOUSE_NAME', 'TorniCars')
+    return render_template('index.html', warehouse_name=warehouse_name)
 
-
-# ========== RUTAS DE INVENTARIO ==========
 
 @app.route('/api/products', methods=['GET'])
-def get_products():
-    """Obtiene todos los productos"""
-    try:
-        products = inventory_manager.get_all_products()
-        return jsonify({
-            'success': True,
-            'data': products
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+def get_products_api():
+    products = inventory.get_all_products(g.db_conn)
+    return jsonify(products)
 
 
-@app.route('/api/products/search', methods=['POST'])
-def search_products():
-    """Busca productos"""
-    try:
-        data = request.get_json()
-        search_term = data.get('search_term', '')
+@app.route('/api/ask', methods=['POST'])
+def ask_assistant_api():
+    data = request.json
+    user_text = data.get('text')
+    conversation_history = data.get('history', [])
 
-        products = inventory_manager.search_products(search_term)
-        return jsonify({
-            'success': True,
-            'data': products
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    if not user_text:
+        return jsonify({"error": "No se proporcionó texto."}), 400
 
+    llm_response = assistant.process_user_prompt(user_text, conversation_history)
 
-@app.route('/api/products', methods=['POST'])
-def add_product():
-    """Agrega un nuevo producto"""
-    try:
-        data = request.get_json()
+    command = llm_response.get('comando')
+    command_data = llm_response.get('datos')
+    spoken_response = llm_response.get('respuesta_hablada', "No entendí, ¿puedes repetirlo?")
+    execution_result = None
 
-        result = inventory_manager.add_product(
-            name=data.get('name', ''),
-            description=data.get('description', ''),
-            sale_price=float(data.get('sale_price', 0)),
-            supplier_price=float(data.get('supplier_price', 0)),
-            quantity=int(data.get('quantity', 0)),
-            physical_location=data.get('physical_location', '')
-        )
+    if command and command_data is not None:
+        try:
+            conn = g.db_conn
+            if command == 'agregar_producto':
+                items_to_add = command_data.get('items', [command_data])
+                added_count, errors = 0, []
+                for item in items_to_add:
+                    item_data = {
+                        'name': item.get('nombre'), 'description': item.get('descripcion'),
+                        'sale_price': item.get('precio_venta'), 'supplier_price': item.get('precio_proveedor'),
+                        'quantity': item.get('cantidad'), 'location': item.get('ubicacion')
+                    }
+                    result = inventory.add_product(conn, **item_data)
+                    if result['status'] == 'success':
+                        added_count += 1
+                    else:
+                        errors.append(result['message'])
 
-        return jsonify(result)
+                if added_count > 0:
+                    spoken_response = f"He agregado {added_count} nuevo(s) producto(s) al inventario."
+                    if errors:
+                        spoken_response += f" Hubo errores con otros: {', '.join(list(set(errors)))}"
+                else:
+                    spoken_response = f"No pude agregar los productos. Errores: {', '.join(list(set(errors)))}"
+                execution_result = {"status": "success"}
 
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+            elif command == 'eliminar_producto':
+                names_to_delete = command_data.get('nombres_productos', [])
+                deleted_count, errors = 0, []
+                for name in names_to_delete:
+                    product = inventory.find_product_by_name(conn, name)
+                    if product:
+                        result = inventory.delete_product(conn, product['id'])
+                        if result['status'] == 'success':
+                            deleted_count += 1
+                        else:
+                            errors.append(f"Error al borrar '{name}'.")
+                    else:
+                        errors.append(f"No se encontró '{name}'.")
 
+                if deleted_count > 0:
+                    spoken_response = f"He eliminado {deleted_count} producto(s) del inventario."
+                else:
+                    spoken_response = "No se eliminó ningún producto."
+                if errors:
+                    spoken_response += f" Errores: {', '.join(errors)}"
+                execution_result = {"status": "success"}
 
-@app.route('/api/products/<int:product_id>', methods=['PUT'])
-def update_product(product_id):
-    """Actualiza un producto"""
-    try:
-        data = request.get_json()
+            elif command == 'actualizar_stock':
+                product = inventory.find_product_by_name(conn, command_data.get('nombre_producto'))
+                if product:
+                    result = inventory.update_stock(conn, product['id'], command_data.get('cantidad'))
+                    spoken_response = result['message']
+                else:
+                    spoken_response = f"No encontré '{command_data.get('nombre_producto')}'."
+                execution_result = {"status": result.get('status', 'error')}
 
-        # Filtrar solo campos válidos
-        update_params = {}
-        valid_fields = ['name', 'description', 'sale_price', 'supplier_price', 'quantity', 'physical_location']
+            elif command == 'editar_producto':
+                product_name = command_data.pop('nombre_producto', None)
+                product = inventory.find_product_by_name(conn, product_name)
+                if product:
+                    result = inventory.update_product_details(conn, product['id'], command_data)
+                    spoken_response = result['message']
+                else:
+                    spoken_response = f"No encontré el producto '{product_name}'."
+                execution_result = {"status": result.get('status', 'error')}
 
-        for field in valid_fields:
-            if field in data:
-                update_params[field] = data[field]
+            elif command == 'buscar_producto':
+                products_found = inventory.search_products(conn, command_data.get('termino_busqueda'))
+                spoken_response = f"Encontré {len(products_found)} productos."
+                execution_result = {"products": products_found}
 
-        result = inventory_manager.update_product(product_id, **update_params)
-        return jsonify(result)
+            elif command == 'listar_productos':
+                all_products = inventory.get_all_products(conn)
+                spoken_response = "Aquí tienes todos los productos."
+                execution_result = {"products": all_products}
 
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+            elif command == 'crear_factura':
+                preview_data = billing.generate_invoice_preview(conn, **command_data)
+                if preview_data['status'] == 'success':
+                    spoken_response = "He generado una vista previa de la factura. Por favor, revísala y confírmala."
+                    execution_result = {"invoice_preview": preview_data['preview']}
+                else:
+                    spoken_response = preview_data['message']
 
+        except Exception as e:
+            spoken_response = f"Ocurrió un error al ejecutar el comando: {e}"
+            print(f"Error ejecutando comando '{command}': {e}")
 
-@app.route('/api/products/<int:product_id>/add-stock', methods=['POST'])
-def add_stock(product_id):
-    """Agrega stock a un producto"""
-    try:
-        data = request.get_json()
-        quantity = int(data.get('quantity', 0))
-
-        result = inventory_manager.add_stock_to_existing(product_id, quantity)
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-# ========== RUTAS DE FACTURACIÓN ==========
-
-@app.route('/api/invoices', methods=['GET'])
-def get_invoices():
-    """Obtiene todas las facturas"""
-    try:
-        invoices = billing_manager.get_all_invoices()
-        return jsonify({
-            'success': True,
-            'data': invoices
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/invoices', methods=['POST'])
-def create_invoice():
-    """Crea una nueva factura"""
-    try:
-        data = request.get_json()
-
-        result = billing_manager.create_invoice(
-            customer_name=data.get('customer_name', ''),
-            customer_phone=data.get('customer_phone', ''),
-            customer_email=data.get('customer_email', ''),
-            items=data.get('items', [])
-        )
-
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/invoices/<int:invoice_id>', methods=['GET'])
-def get_invoice(invoice_id):
-    """Obtiene una factura específica"""
-    try:
-        invoice = billing_manager.get_invoice(invoice_id)
-
-        if invoice:
-            return jsonify({
-                'success': True,
-                'data': invoice
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': 'Factura no encontrada'
-            }), 404
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/invoices/<int:invoice_id>/print', methods=['POST'])
-def print_invoice(invoice_id):
-    """Imprime una factura"""
-    try:
-        result = billing_manager.print_invoice(invoice_id)
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/invoices/<int:invoice_id>/download', methods=['GET'])
-def download_invoice(invoice_id):
-    """Descarga una factura como archivo de texto"""
-    try:
-        result = billing_manager.print_invoice(invoice_id)
-
-        if result['success']:
-            return send_file(result['filename'], as_attachment=True)
-        else:
-            return jsonify(result), 500
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-# ========== RUTAS DEL ASISTENTE DE VOZ ==========
-
-@app.route('/api/voice/process', methods=['POST'])
-def process_voice_message():
-    """Procesa un mensaje del asistente de voz"""
-    try:
-        data = request.get_json()
-        message = data.get('message', '')
-
-        if not message:
-            return jsonify({
-                'success': False,
-                'message': 'Mensaje vacío'
-            }), 400
-
-        result = voice_assistant.process_message(message)
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e),
-            'audio_response': 'Lo siento, hubo un error procesando tu solicitud'
-        }), 500
-
-
-@app.route('/api/voice/speak', methods=['POST'])
-def text_to_speech():
-    """Convierte texto a voz"""
-    try:
-        data = request.get_json()
-        text = data.get('text', '')
-
-        if not text:
-            return jsonify({
-                'success': False,
-                'message': 'Texto vacío'
-            }), 400
-
-        success = voice_assistant.text_to_speech(text)
-
-        return jsonify({
-            'success': success,
-            'message': 'Audio reproducido' if success else 'Error reproduciendo audio'
-        })
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-# ========== RUTAS DE CONFIGURACIÓN ==========
-
-@app.route('/api/config', methods=['GET'])
-def get_config():
-    """Obtiene la configuración actual"""
-    try:
-        config = {
-            'warehouse_name': os.getenv('WAREHOUSE_NAME', 'TorniCars'),
-            'company_nit': os.getenv('COMPANY_NIT', '900123456-7'),
-            'company_address': os.getenv('COMPANY_ADDRESS', 'Dirección no configurada'),
-            'company_phone': os.getenv('COMPANY_PHONE', 'Teléfono no configurado'),
-            'company_email': os.getenv('COMPANY_EMAIL', 'Email no configurado')
-        }
-
-        return jsonify({
-            'success': True,
-            'data': config
-        })
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-# ========== MANEJO DE ERRORES ==========
-
-@app.errorhandler(404)
-def not_found(error):
     return jsonify({
-        'success': False,
-        'message': 'Endpoint no encontrado'
-    }), 404
+        "spoken_response": spoken_response,
+        "llm_response_json": llm_response,
+        "execution_result": execution_result
+    })
 
 
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({
-        'success': False,
-        'message': 'Error interno del servidor'
-    }), 500
+@app.route('/api/invoice/confirm', methods=['POST'])
+def confirm_invoice_api():
+    invoice_data = request.json
+    try:
+        conn = g.db_conn
+        result = billing.create_invoice_from_preview(conn, invoice_data)
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error al confirmar factura: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+def setup_database():
+    print("Configurando la base de datos...")
+    db.create_tables()
+    db.init_db_with_examples()
+    print("Configuración de la base de datos completada.")
 
 
 if __name__ == '__main__':
-    # Crear carpetas si no existen
-    os.makedirs('templates', exist_ok=True)
-    os.makedirs('static/css', exist_ok=True)
-    os.makedirs('static/js', exist_ok=True)
-
-    print(f"Iniciando servidor del asistente de voz para {os.getenv('WAREHOUSE_NAME', 'TorniCars')}")
-    print("Accede a http://localhost:5000 para usar la aplicación")
-
-    socketio.run(app, host="0.0.0.0", port=5000,allow_unsafe_werkzeug=True)
+    setup_database()
+    app.run(
+        host='0.0.0.0',
+        port=5001,
+        debug=False,
+        ssl_context='adhoc'
+    )

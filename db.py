@@ -1,26 +1,38 @@
 import sqlite3
 import os
-from datetime import datetime
 
-DATABASE_PATH = 'inventory.db'
+DATABASE_FILE = 'inventory.db'
 
 
-def init_db():
-    """Inicializa la base de datos y crea las tablas necesarias"""
-    conn = sqlite3.connect(DATABASE_PATH)
+def get_db_connection():
+    """
+    Crea y retorna una conexión a la base de datos.
+    La conexión está configurada para devolver filas como diccionarios y se asegura de que el archivo exista.
+    """
+    # La base de datos ahora se crea al inicio de la app, no aquí.
+    # Esto evita el error de 'archivo en uso'.
+    conn = sqlite3.connect(DATABASE_FILE, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def create_tables():
+    """
+    Crea las tablas necesarias en la base de datos si no existen.
+    """
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     # Tabla de productos
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            reference_number INTEGER UNIQUE,
             name TEXT NOT NULL,
             description TEXT,
-            sale_price REAL,
+            sale_price REAL NOT NULL,
             supplier_price REAL,
-            quantity INTEGER DEFAULT 0,
-            physical_location TEXT,
+            quantity INTEGER NOT NULL,
+            location TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -29,27 +41,24 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS invoices (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            invoice_number TEXT UNIQUE,
-            customer_name TEXT NOT NULL,
-            customer_phone TEXT,
-            customer_email TEXT,
-            subtotal REAL,
-            tax_amount REAL,
-            total_amount REAL,
+            client_name TEXT NOT NULL,
+            client_contact TEXT,
+            client_email TEXT,
+            subtotal REAL NOT NULL,
+            tax REAL NOT NULL,
+            total REAL NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
-    # Tabla de items de factura
+    # Tabla de ítems de la factura (relación muchos a muchos)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS invoice_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            invoice_id INTEGER,
-            product_id INTEGER,
-            product_name TEXT,
-            quantity INTEGER,
-            unit_price REAL,
-            total_price REAL,
+            invoice_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            quantity INTEGER NOT NULL,
+            unit_price REAL NOT NULL,
             FOREIGN KEY (invoice_id) REFERENCES invoices (id),
             FOREIGN KEY (product_id) REFERENCES products (id)
         )
@@ -57,46 +66,41 @@ def init_db():
 
     conn.commit()
     conn.close()
+    print("Tablas verificadas/creadas exitosamente.")
 
 
-def get_connection():
-    """Obtiene una conexión a la base de datos"""
-    return sqlite3.connect(DATABASE_PATH)
-
-
-def get_next_reference_number():
-    """Obtiene el próximo número de referencia para un producto"""
-    conn = get_connection()
+def init_db_with_examples():
+    """
+    Puebla la base de datos con datos de ejemplo si está vacía.
+    """
+    conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute('SELECT MAX(reference_number) FROM products')
-    result = cursor.fetchone()
+    # Verificar si ya hay productos para no insertar duplicados
+    cursor.execute("SELECT COUNT(id) FROM products")
+    count = cursor.fetchone()[0]
+
+    if count == 0:
+        print("La base de datos está vacía. Insertando datos de ejemplo...")
+        products_data = [
+            ('Tornillo M5 Acero Inoxidable', 'Tornillo de cabeza hexagonal M5x20mm', 0.5, 0.2, 500,
+             'Estante A, Fila 1, Columna 1'),
+            ('Tuerca M5 Zincada', 'Tuerca hexagonal para tornillo M5', 0.2, 0.08, 800, 'Estante A, Fila 1, Columna 2'),
+            ('Arandela Plana M5', 'Arandela de presión para tornillo M5', 0.1, 0.04, 1200,
+             'Estante A, Fila 1, Columna 3'),
+            ('Llave Allen 4mm', 'Llave hexagonal para tornillos M5', 3.0, 1.5, 50, 'Cajón Herramientas 1'),
+            ('Aceite Multiusos WD-40', 'Lata de aceite lubricante 8oz', 8.5, 5.0, 30, 'Estante B, Fila 2')
+        ]
+
+        cursor.executemany('''
+            INSERT INTO products (name, description, sale_price, supplier_price, quantity, location)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', products_data)
+
+        conn.commit()
+        print(f"{cursor.rowcount} productos de ejemplo insertados.")
+    else:
+        print("La base de datos ya contiene datos.")
 
     conn.close()
 
-    if result[0] is None:
-        return 1
-    return result[0] + 1
-
-
-def get_next_invoice_number():
-    """Genera el próximo número de factura"""
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    today = datetime.now().strftime('%Y%m%d')
-    cursor.execute('''
-        SELECT COUNT(*) FROM invoices 
-        WHERE DATE(created_at) = DATE('now')
-    ''')
-
-    daily_count = cursor.fetchone()[0] + 1
-    conn.close()
-
-    return f"FAC-{today}-{daily_count:03d}"
-
-
-# Inicializar la base de datos al importar el módulo
-if __name__ == "__main__":
-    init_db()
-    print("Base de datos inicializada correctamente")

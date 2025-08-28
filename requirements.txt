@@ -1,8 +1,5 @@
-flask==2.3.3
-flask-cors==4.0.0
-sqlite3
-google-generativeai==0.3.2
-gtts==2.4.0
-pygame==2.5.2
+Flask==3.0.0
 python-dotenv==1.0.0
-difflib
+google-generativeai==0.4.0
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.23.0

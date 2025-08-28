@@ -1,313 +1,124 @@
-import sqlite3
-from db import get_connection, get_next_reference_number
-import difflib
+from fuzzywuzzy import process
+
+SIMILARITY_THRESHOLD = 95
 
 
-class InventoryManager:
+def find_product_by_name(conn, name):
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, name FROM products')
+    all_products = cursor.fetchall()
 
-    def __init__(self):
-        pass
-
-    def find_similar_products(self, search_term, threshold=0.6):
-        """Encuentra productos similares por nombre usando algoritmo de similitud"""
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute('SELECT id, name, description FROM products')
-        products = cursor.fetchall()
-        conn.close()
-
-        similar_products = []
-        search_term_lower = search_term.lower()
-
-        for product_id, name, description in products:
-            # Comparar con nombre
-            name_similarity = difflib.SequenceMatcher(None, search_term_lower, name.lower()).ratio()
-
-            # Comparar con descripción si existe
-            desc_similarity = 0
-            if description:
-                desc_similarity = difflib.SequenceMatcher(None, search_term_lower, description.lower()).ratio()
-
-            max_similarity = max(name_similarity, desc_similarity)
-
-            if max_similarity >= threshold:
-                similar_products.append({
-                    'id': product_id,
-                    'name': name,
-                    'description': description,
-                    'similarity': max_similarity
-                })
-
-        # Ordenar por similitud descendente
-        similar_products.sort(key=lambda x: x['similarity'], reverse=True)
-        return similar_products
-
-    def add_product(self, name, description="", sale_price=0.0, supplier_price=0.0,
-                    quantity=0, physical_location=""):
-        """Agrega un nuevo producto al inventario"""
-
-        # Verificar si existe un producto similar
-        similar_products = self.find_similar_products(name, threshold=0.8)
-
-        if similar_products:
-            return {
-                'success': False,
-                'message': f'Ya existe un producto similar: "{similar_products[0]["name"]}". ¿Deseas agregar stock a ese producto en su lugar?',
-                'similar_product': similar_products[0],
-                'action_needed': 'confirm_add_stock'
-            }
-
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        reference_number = get_next_reference_number()
-
-        try:
-            cursor.execute('''
-                INSERT INTO products (reference_number, name, description, sale_price, 
-                                    supplier_price, quantity, physical_location)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (reference_number, name, description, sale_price, supplier_price,
-                  quantity, physical_location))
-
-            product_id = cursor.lastrowid
-            conn.commit()
-
-            return {
-                'success': True,
-                'message': f'Producto "{name}" agregado exitosamente con referencia #{reference_number}',
-                'product_id': product_id,
-                'reference_number': reference_number
-            }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'message': f'Error al agregar producto: {str(e)}'
-            }
-        finally:
-            conn.close()
-
-    def add_stock_to_existing(self, product_id, additional_quantity):
-        """Agrega stock a un producto existente"""
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        try:
-            cursor.execute('''
-                UPDATE products 
-                SET quantity = quantity + ?
-                WHERE id = ?
-            ''', (additional_quantity, product_id))
-
-            if cursor.rowcount > 0:
-                # Obtener información actualizada del producto
-                cursor.execute('SELECT name, quantity FROM products WHERE id = ?', (product_id,))
-                name, new_quantity = cursor.fetchone()
-
-                conn.commit()
-                return {
-                    'success': True,
-                    'message': f'Se agregaron {additional_quantity} unidades a "{name}". Stock actual: {new_quantity}'
-                }
-            else:
-                return {
-                    'success': False,
-                    'message': 'Producto no encontrado'
-                }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'message': f'Error al actualizar stock: {str(e)}'
-            }
-        finally:
-            conn.close()
-
-    def search_products(self, search_term):
-        """Busca productos por nombre o descripción"""
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        search_pattern = f'%{search_term}%'
-        cursor.execute('''
-            SELECT id, reference_number, name, description, sale_price, 
-                   quantity, physical_location
-            FROM products 
-            WHERE name LIKE ? OR description LIKE ?
-            ORDER BY name
-        ''', (search_pattern, search_pattern))
-
-        products = cursor.fetchall()
-        conn.close()
-
-        result = []
-        for product in products:
-            result.append({
-                'id': product[0],
-                'reference_number': product[1],
-                'name': product[2],
-                'description': product[3],
-                'sale_price': product[4],
-                'quantity': product[5],
-                'physical_location': product[6]
-            })
-
-        return result
-
-    def get_all_products(self):
-        """Obtiene todos los productos del inventario"""
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            SELECT id, reference_number, name, description, sale_price, 
-                   supplier_price, quantity, physical_location
-            FROM products 
-            ORDER BY reference_number
-        ''')
-
-        products = cursor.fetchall()
-        conn.close()
-
-        result = []
-        for product in products:
-            result.append({
-                'id': product[0],
-                'reference_number': product[1],
-                'name': product[2],
-                'description': product[3],
-                'sale_price': product[4],
-                'supplier_price': product[5],
-                'quantity': product[6],
-                'physical_location': product[7]
-            })
-
-        return result
-
-    def update_product(self, product_id, **kwargs):
-        """Actualiza un producto existente"""
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        # Construir la consulta dinámicamente
-        set_clauses = []
-        values = []
-
-        for key, value in kwargs.items():
-            if key in ['name', 'description', 'sale_price', 'supplier_price',
-                       'quantity', 'physical_location']:
-                set_clauses.append(f'{key} = ?')
-                values.append(value)
-
-        if not set_clauses:
-            return {
-                'success': False,
-                'message': 'No hay campos válidos para actualizar'
-            }
-
-        values.append(product_id)
-
-        try:
-            cursor.execute(f'''
-                UPDATE products 
-                SET {', '.join(set_clauses)}
-                WHERE id = ?
-            ''', values)
-
-            if cursor.rowcount > 0:
-                conn.commit()
-                return {
-                    'success': True,
-                    'message': 'Producto actualizado exitosamente'
-                }
-            else:
-                return {
-                    'success': False,
-                    'message': 'Producto no encontrado'
-                }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'message': f'Error al actualizar producto: {str(e)}'
-            }
-        finally:
-            conn.close()
-
-    def reduce_stock(self, product_id, quantity_to_reduce):
-        """Reduce el stock de un producto (para facturación)"""
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        try:
-            # Verificar stock actual
-            cursor.execute('SELECT name, quantity FROM products WHERE id = ?', (product_id,))
-            result = cursor.fetchone()
-
-            if not result:
-                return {
-                    'success': False,
-                    'message': 'Producto no encontrado'
-                }
-
-            name, current_quantity = result
-
-            if current_quantity < quantity_to_reduce:
-                return {
-                    'success': False,
-                    'message': f'Stock insuficiente. Disponible: {current_quantity}, solicitado: {quantity_to_reduce}'
-                }
-
-            # Reducir stock
-            cursor.execute('''
-                UPDATE products 
-                SET quantity = quantity - ?
-                WHERE id = ?
-            ''', (quantity_to_reduce, product_id))
-
-            conn.commit()
-
-            new_quantity = current_quantity - quantity_to_reduce
-            return {
-                'success': True,
-                'message': f'Stock reducido. "{name}" ahora tiene {new_quantity} unidades',
-                'new_quantity': new_quantity
-            }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'message': f'Error al reducir stock: {str(e)}'
-            }
-        finally:
-            conn.close()
-
-    def get_product_by_id(self, product_id):
-        """Obtiene un producto por su ID"""
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            SELECT id, reference_number, name, description, sale_price, 
-                   supplier_price, quantity, physical_location
-            FROM products 
-            WHERE id = ?
-        ''', (product_id,))
-
-        product = cursor.fetchone()
-        conn.close()
-
-        if product:
-            return {
-                'id': product[0],
-                'reference_number': product[1],
-                'name': product[2],
-                'description': product[3],
-                'sale_price': product[4],
-                'supplier_price': product[5],
-                'quantity': product[6],
-                'physical_location': product[7]
-            }
+    if not all_products:
         return None
+
+    product_names = {prod['name']: prod['id'] for prod in all_products}
+    best_match, score = process.extractOne(name, product_names.keys())
+
+    if score >= SIMILARITY_THRESHOLD:
+        product_id = product_names[best_match]
+        cursor.execute('SELECT * FROM products WHERE id = ?', (product_id,))
+        product = cursor.fetchone()
+        return dict(product) if product else None
+
+    return None
+
+
+def add_product(conn, name, description, sale_price, supplier_price, quantity, location):
+    existing_product = find_product_by_name(conn, name)
+    if existing_product:
+        return {
+            "status": "exists",
+            "message": f"Ya existe un producto llamado '{existing_product['name']}'.",
+            "product_id": existing_product['id']
+        }
+
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO products (name, description, sale_price, supplier_price, quantity, location)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (name, description, sale_price, supplier_price, quantity, location))
+    conn.commit()
+    new_id = cursor.lastrowid
+
+    return {
+        "status": "success",
+        "message": f"Producto '{name}' agregado exitosamente.",
+        "product_id": new_id
+    }
+
+
+def delete_product(conn, product_id):
+    """
+    Elimina un producto de la base de datos por su ID.
+    """
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
+    conn.commit()
+
+    if cursor.rowcount > 0:
+        return {"status": "success", "message": "Producto eliminado exitosamente."}
+    else:
+        return {"status": "error", "message": "No se encontró el producto para eliminar."}
+
+
+def update_stock(conn, product_id, quantity_change):
+    cursor = conn.cursor()
+    cursor.execute('SELECT quantity FROM products WHERE id = ?', (product_id,))
+    product = cursor.fetchone()
+
+    if not product:
+        return {"status": "error", "message": "El producto no existe."}
+
+    current_quantity = product['quantity']
+    new_quantity = current_quantity + quantity_change
+
+    if new_quantity < 0:
+        return {"status": "error", "message": f"No hay suficiente stock."}
+
+    cursor.execute('UPDATE products SET quantity = ? WHERE id = ?', (new_quantity, product_id))
+    conn.commit()
+
+    action = "agregado" if quantity_change > 0 else "restado"
+    return {
+        "status": "success",
+        "message": f"Stock actualizado."
+    }
+
+
+def update_product_details(conn, product_id, details_to_update):
+    if not details_to_update:
+        return {"status": "error", "message": "No se proporcionaron detalles para actualizar."}
+
+    column_mapping = {
+        'nuevo_nombre': 'name', 'descripcion': 'description',
+        'precio_venta': 'sale_price', 'precio_proveedor': 'supplier_price',
+        'ubicacion': 'location'
+    }
+
+    fields = [f"{column_mapping[k]} = ?" for k, v in details_to_update.items() if k in column_mapping and v is not None]
+    values = [v for k, v in details_to_update.items() if k in column_mapping and v is not None]
+
+    if not fields:
+        return {"status": "error", "message": "Campos no válidos para actualizar."}
+
+    values.append(product_id)
+    sql_query = f"UPDATE products SET {', '.join(fields)} WHERE id = ?"
+
+    cursor = conn.cursor()
+    cursor.execute(sql_query, tuple(values))
+    conn.commit()
+
+    return {"status": "success", "message": f"Detalles del producto actualizados."}
+
+
+def search_products(conn, query):
+    cursor = conn.cursor()
+    search_query = f"%{query}%"
+    cursor.execute('SELECT * FROM products WHERE name LIKE ? OR description LIKE ?', (search_query, search_query))
+    return [dict(row) for row in cursor.fetchall()]
+
+
+def get_all_products(conn):
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM products ORDER BY id ASC')
+    return [dict(row) for row in cursor.fetchall()]
