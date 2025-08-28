@@ -1,353 +1,341 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, render_template, send_file
+from flask_cors import CORS
+from flask_socketio import SocketIO
 import os
-import json
 from dotenv import load_dotenv
-from db import init_db, ProductoDB, FacturaDB
+from db import init_db
 from inventory import InventoryManager
 from billing import BillingManager
 from assistant import VoiceAssistant
-from gtts import gTTS
-import tempfile
 
 # Cargar variables de entorno
 load_dotenv()
 
+# Inicializar Flask
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+CORS(app)
+
+# Configurar la clave secreta
+app.config['SECRET_KEY'] = 'tu_clave_secreta_aqui'
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Inicializar managers
+inventory_manager = InventoryManager()
+billing_manager = BillingManager()
+voice_assistant = VoiceAssistant()
 
 # Inicializar base de datos
 init_db()
-
-# Instancia global del asistente
-voice_assistant = VoiceAssistant()
 
 
 @app.route('/')
 def index():
     """Página principal"""
-    warehouse_name = os.getenv('WAREHOUSE_NAME', 'TorniCars')
-    return render_template('index.html', warehouse_name=warehouse_name)
+    return render_template('index.html')
 
 
-# ===== RUTAS DE INVENTARIO =====
+# ========== RUTAS DE INVENTARIO ==========
 
-@app.route('/api/productos', methods=['GET'])
-def listar_productos():
-    """Lista todos los productos"""
-    resultado = InventoryManager.listar_todos_productos()
-    return jsonify(resultado)
-
-
-@app.route('/api/productos/buscar', methods=['POST'])
-def buscar_productos():
-    """Busca productos por término"""
-    data = request.get_json()
-    termino = data.get('termino', '')
-
-    if not termino:
-        return jsonify({'success': False, 'message': 'Término de búsqueda requerido'})
-
-    resultado = InventoryManager.buscar_productos(termino)
-    return jsonify(resultado)
-
-
-@app.route('/api/productos', methods=['POST'])
-def agregar_producto():
-    """Agrega un nuevo producto"""
-    data = request.get_json()
-
-    resultado = InventoryManager.agregar_producto(
-        nombre=data.get('nombre', ''),
-        descripcion=data.get('descripcion', ''),
-        precio_venta=data.get('precio_venta', 0),
-        precio_proveedor=data.get('precio_proveedor', 0),
-        cantidad=data.get('cantidad', 0),
-        ubicacion=data.get('ubicacion', '')
-    )
-
-    return jsonify(resultado)
-
-
-@app.route('/api/productos/<int:producto_id>', methods=['GET'])
-def obtener_producto(producto_id):
-    """Obtiene un producto específico"""
-    resultado = InventoryManager.obtener_producto(producto_id)
-    return jsonify(resultado)
-
-
-@app.route('/api/productos/<int:producto_id>', methods=['PUT'])
-def actualizar_producto(producto_id):
-    """Actualiza un producto existente"""
-    data = request.get_json()
-
-    resultado = InventoryManager.actualizar_producto(producto_id, **data)
-    return jsonify(resultado)
-
-
-@app.route('/api/productos/stock-bajo', methods=['GET'])
-def productos_stock_bajo():
-    """Obtiene productos con stock bajo"""
-    limite = request.args.get('limite', 10, type=int)
-    resultado = InventoryManager.obtener_productos_bajo_stock(limite)
-    return jsonify(resultado)
-
-
-# ===== RUTAS DE FACTURACIÓN =====
-
-@app.route('/api/facturas', methods=['GET'])
-def listar_facturas():
-    """Lista todas las facturas"""
-    resultado = BillingManager.listar_facturas()
-    return jsonify(resultado)
-
-
-@app.route('/api/facturas', methods=['POST'])
-def crear_factura():
-    """Crea una nueva factura"""
-    data = request.get_json()
-
-    resultado = BillingManager.crear_factura(
-        cliente_nombre=data.get('cliente_nombre', ''),
-        cliente_contacto=data.get('cliente_contacto', ''),
-        cliente_email=data.get('cliente_email', ''),
-        items=data.get('items', [])
-    )
-
-    return jsonify(resultado)
-
-
-@app.route('/api/facturas/<int:factura_id>', methods=['GET'])
-def obtener_factura(factura_id):
-    """Obtiene una factura específica"""
-    resultado = BillingManager.obtener_factura(factura_id)
-    return jsonify(resultado)
-
-
-@app.route('/api/facturas/<int:factura_id>/imprimir', methods=['GET'])
-def imprimir_factura(factura_id):
-    """Genera HTML de factura para impresión"""
-    html = BillingManager.generar_factura_html(factura_id)
-    return Response(html, mimetype='text/html')
-
-
-@app.route('/api/facturas/validar', methods=['POST'])
-def validar_factura():
-    """Valida los datos de una factura antes de crearla"""
-    data = request.get_json()
-
-    resultado = BillingManager.validar_datos_factura(
-        cliente_nombre=data.get('cliente_nombre', ''),
-        items=data.get('items', [])
-    )
-
-    return jsonify({
-        'success': resultado['valido'],
-        'message': 'Datos válidos' if resultado['valido'] else 'Datos inválidos',
-        'data': {
-            'errores': resultado['errores'],
-            'items_validados': resultado.get('items_validados', [])
-        }
-    })
-
-
-# ===== RUTAS DEL ASISTENTE DE VOZ =====
-
-@app.route('/api/assistant/message', methods=['POST'])
-def process_assistant_message():
-    """Procesa un mensaje del asistente de voz"""
-    data = request.get_json()
-    message = data.get('message', '')
-
-    if not message:
-        return jsonify({
-            'success': False,
-            'message': 'Mensaje requerido'
-        })
-
+@app.route('/api/products', methods=['GET'])
+def get_products():
+    """Obtiene todos los productos"""
     try:
-        response = voice_assistant.process_message(message)
+        products = inventory_manager.get_all_products()
         return jsonify({
             'success': True,
-            'data': response
+            'data': products
         })
     except Exception as e:
         return jsonify({
             'success': False,
-            'message': f'Error procesando mensaje: {str(e)}'
-        })
+            'message': str(e)
+        }), 500
 
 
-@app.route('/api/assistant/tts', methods=['POST'])
-def text_to_speech():
-    """Convierte texto a audio usando gTTS"""
-    data = request.get_json()
-    text = data.get('text', '')
-
-    if not text:
-        return jsonify({'success': False, 'message': 'Texto requerido'})
-
+@app.route('/api/products/search', methods=['POST'])
+def search_products():
+    """Busca productos"""
     try:
-        # Crear archivo temporal para el audio
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
-            tts = gTTS(text=text, lang='es', slow=False)
-            tts.save(tmp_file.name)
+        data = request.get_json()
+        search_term = data.get('search_term', '')
 
-            # Leer el contenido del archivo
-            with open(tmp_file.name, 'rb') as audio_file:
-                audio_data = audio_file.read()
+        products = inventory_manager.search_products(search_term)
+        return jsonify({
+            'success': True,
+            'data': products
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
-            # Limpiar archivo temporal
-            os.unlink(tmp_file.name)
 
-            return Response(
-                audio_data,
-                mimetype='audio/mpeg',
-                headers={'Content-Disposition': 'attachment; filename=speech.mp3'}
-            )
+@app.route('/api/products', methods=['POST'])
+def add_product():
+    """Agrega un nuevo producto"""
+    try:
+        data = request.get_json()
+
+        result = inventory_manager.add_product(
+            name=data.get('name', ''),
+            description=data.get('description', ''),
+            sale_price=float(data.get('sale_price', 0)),
+            supplier_price=float(data.get('supplier_price', 0)),
+            quantity=int(data.get('quantity', 0)),
+            physical_location=data.get('physical_location', '')
+        )
+
+        return jsonify(result)
 
     except Exception as e:
         return jsonify({
             'success': False,
-            'message': f'Error generando audio: {str(e)}'
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/products/<int:product_id>', methods=['PUT'])
+def update_product(product_id):
+    """Actualiza un producto"""
+    try:
+        data = request.get_json()
+
+        # Filtrar solo campos válidos
+        update_params = {}
+        valid_fields = ['name', 'description', 'sale_price', 'supplier_price', 'quantity', 'physical_location']
+
+        for field in valid_fields:
+            if field in data:
+                update_params[field] = data[field]
+
+        result = inventory_manager.update_product(product_id, **update_params)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/products/<int:product_id>/add-stock', methods=['POST'])
+def add_stock(product_id):
+    """Agrega stock a un producto"""
+    try:
+        data = request.get_json()
+        quantity = int(data.get('quantity', 0))
+
+        result = inventory_manager.add_stock_to_existing(product_id, quantity)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+# ========== RUTAS DE FACTURACIÓN ==========
+
+@app.route('/api/invoices', methods=['GET'])
+def get_invoices():
+    """Obtiene todas las facturas"""
+    try:
+        invoices = billing_manager.get_all_invoices()
+        return jsonify({
+            'success': True,
+            'data': invoices
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/invoices', methods=['POST'])
+def create_invoice():
+    """Crea una nueva factura"""
+    try:
+        data = request.get_json()
+
+        result = billing_manager.create_invoice(
+            customer_name=data.get('customer_name', ''),
+            customer_phone=data.get('customer_phone', ''),
+            customer_email=data.get('customer_email', ''),
+            items=data.get('items', [])
+        )
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/invoices/<int:invoice_id>', methods=['GET'])
+def get_invoice(invoice_id):
+    """Obtiene una factura específica"""
+    try:
+        invoice = billing_manager.get_invoice(invoice_id)
+
+        if invoice:
+            return jsonify({
+                'success': True,
+                'data': invoice
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Factura no encontrada'
+            }), 404
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/invoices/<int:invoice_id>/print', methods=['POST'])
+def print_invoice(invoice_id):
+    """Imprime una factura"""
+    try:
+        result = billing_manager.print_invoice(invoice_id)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/invoices/<int:invoice_id>/download', methods=['GET'])
+def download_invoice(invoice_id):
+    """Descarga una factura como archivo de texto"""
+    try:
+        result = billing_manager.print_invoice(invoice_id)
+
+        if result['success']:
+            return send_file(result['filename'], as_attachment=True)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+# ========== RUTAS DEL ASISTENTE DE VOZ ==========
+
+@app.route('/api/voice/process', methods=['POST'])
+def process_voice_message():
+    """Procesa un mensaje del asistente de voz"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+
+        if not message:
+            return jsonify({
+                'success': False,
+                'message': 'Mensaje vacío'
+            }), 400
+
+        result = voice_assistant.process_message(message)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'audio_response': 'Lo siento, hubo un error procesando tu solicitud'
+        }), 500
+
+
+@app.route('/api/voice/speak', methods=['POST'])
+def text_to_speech():
+    """Convierte texto a voz"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+
+        if not text:
+            return jsonify({
+                'success': False,
+                'message': 'Texto vacío'
+            }), 400
+
+        success = voice_assistant.text_to_speech(text)
+
+        return jsonify({
+            'success': success,
+            'message': 'Audio reproducido' if success else 'Error reproduciendo audio'
         })
 
-
-@app.route('/api/assistant/context', methods=['GET'])
-def get_assistant_context():
-    """Obtiene el contexto actual del asistente"""
-    summary = voice_assistant.get_conversation_summary()
-    return jsonify({
-        'success': True,
-        'data': summary
-    })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 
-@app.route('/api/assistant/context', methods=['DELETE'])
-def clear_assistant_context():
-    """Limpia el contexto del asistente"""
-    voice_assistant.clear_context()
-    return jsonify({
-        'success': True,
-        'message': 'Contexto limpiado'
-    })
-
-
-# ===== RUTAS DE UTILIDAD =====
+# ========== RUTAS DE CONFIGURACIÓN ==========
 
 @app.route('/api/config', methods=['GET'])
 def get_config():
-    """Obtiene la configuración de la aplicación"""
-    return jsonify({
-        'warehouse_name': os.getenv('WAREHOUSE_NAME', 'TorniCars'),
-        'company_name': os.getenv('COMPANY_NAME', 'TorniCars S.A.S'),
-        'company_nit': os.getenv('COMPANY_NIT', '900123456-1'),
-        'company_address': os.getenv('COMPANY_ADDRESS', 'Calle 123 #45-67, Bucaramanga'),
-        'company_phone': os.getenv('COMPANY_PHONE', '+57 7 1234567'),
-        'company_email': os.getenv('COMPANY_EMAIL', 'info@tornicars.com')
-    })
-
-
-@app.route('/api/stats', methods=['GET'])
-def get_stats():
-    """Obtiene estadísticas básicas del sistema"""
+    """Obtiene la configuración actual"""
     try:
-        # Estadísticas de productos
-        productos_result = InventoryManager.listar_todos_productos()
-        total_productos = len(productos_result['data']) if productos_result['success'] else 0
-
-        # Productos con stock bajo
-        stock_bajo_result = InventoryManager.obtener_productos_bajo_stock(10)
-        productos_stock_bajo = len(stock_bajo_result['data']) if stock_bajo_result['success'] else 0
-
-        # Estadísticas de facturas
-        facturas_result = BillingManager.listar_facturas()
-        total_facturas = len(facturas_result['data']) if facturas_result['success'] else 0
-
-        # Valor total del inventario
-        valor_inventario = 0
-        if productos_result['success']:
-            for producto in productos_result['data']:
-                valor_inventario += producto['precio_venta'] * producto['cantidad']
+        config = {
+            'warehouse_name': os.getenv('WAREHOUSE_NAME', 'TorniCars'),
+            'company_nit': os.getenv('COMPANY_NIT', '900123456-7'),
+            'company_address': os.getenv('COMPANY_ADDRESS', 'Dirección no configurada'),
+            'company_phone': os.getenv('COMPANY_PHONE', 'Teléfono no configurado'),
+            'company_email': os.getenv('COMPANY_EMAIL', 'Email no configurado')
+        }
 
         return jsonify({
             'success': True,
-            'data': {
-                'total_productos': total_productos,
-                'productos_stock_bajo': productos_stock_bajo,
-                'total_facturas': total_facturas,
-                'valor_inventario': round(valor_inventario, 2)
-            }
+            'data': config
         })
 
     except Exception as e:
         return jsonify({
             'success': False,
-            'message': f'Error obteniendo estadísticas: {str(e)}',
-            'data': {}
-        })
+            'message': str(e)
+        }), 500
 
 
-# ===== MANEJO DE ERRORES =====
+# ========== MANEJO DE ERRORES ==========
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Recurso no encontrado'}), 404
+    return jsonify({
+        'success': False,
+        'message': 'Endpoint no encontrado'
+    }), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({'error': 'Error interno del servidor'}), 500
-
-
-@app.errorhandler(400)
-def bad_request(error):
-    return jsonify({'error': 'Solicitud inválida'}), 400
-
-
-# ===== MIDDLEWARE =====
-
-@app.before_request
-def before_request():
-    """Middleware ejecutado antes de cada solicitud"""
-    # Permitir CORS para desarrollo
-    if request.method == 'OPTIONS':
-        response = jsonify({})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        return response
-
-
-@app.after_request
-def after_request(response):
-    """Middleware ejecutado después de cada solicitud"""
-    # Permitir CORS para desarrollo
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response
+    return jsonify({
+        'success': False,
+        'message': 'Error interno del servidor'
+    }), 500
 
 
 if __name__ == '__main__':
-    # Configuración para desarrollo
-    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    port = int(os.getenv('PORT', 5000))
+    # Crear carpetas si no existen
+    os.makedirs('templates', exist_ok=True)
+    os.makedirs('static/css', exist_ok=True)
+    os.makedirs('static/js', exist_ok=True)
 
-    print(f"""
-╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-║                                   ASISTENTE DE VOZ PARA INVENTARIO                                         ║
-║                                              {os.getenv('WAREHOUSE_NAME', 'TorniCars')}                                              ║
-╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
-║ Servidor iniciado en: http://localhost:{port}                                                                   ║
-║ Modo debug: {'Activado' if debug_mode else 'Desactivado'}                                                                          ║
-║ Base de datos: SQLite (inventory.db)                                                                        ║
-║ IA: Gemini API                                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
-    """)
+    print(f"Iniciando servidor del asistente de voz para {os.getenv('WAREHOUSE_NAME', 'TorniCars')}")
+    print("Accede a http://localhost:5000 para usar la aplicación")
 
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        debug=debug_mode,
-        threaded=True
-    )
+    socketio.run(app, host="0.0.0.0", port=5000,allow_unsafe_werkzeug=True)

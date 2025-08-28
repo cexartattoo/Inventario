@@ -1,343 +1,390 @@
+import google.generativeai as genai
 import json
 import os
-import re
-from datetime import datetime
-import google.generativeai as genai
+from dotenv import load_dotenv
+from gtts import gTTS
+import pygame
+import tempfile
 from inventory import InventoryManager
 from billing import BillingManager
 
+# Cargar variables de entorno
+load_dotenv()
+
 
 class VoiceAssistant:
-    """Asistente de voz para gestión de inventario"""
 
     def __init__(self):
-        # Configurar Gemini
+        # Configurar Gemini API
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
-            raise ValueError("GEMINI_API_KEY no encontrada en variables de entorno")
+            raise ValueError("GEMINI_API_KEY no está configurada en el archivo .env")
 
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel('gemini-1.5-flash')
 
-        # Almacén
-        self.warehouse_name = os.getenv('WAREHOUSE_NAME', 'TorniCars')
+        # Inicializar managers
+        self.inventory_manager = InventoryManager()
+        self.billing_manager = BillingManager()
 
-        # Estado de conversación
-        self.conversation_context = []
-        self.pending_data = {}
+        # Inicializar pygame para reproducir audio
+        pygame.mixer.init()
 
-    def get_system_prompt(self):
-        """Obtiene el prompt del sistema para el LLM"""
-        return f"""
-Eres un asistente de voz para el almacén "{self.warehouse_name}". Tu trabajo es ayudar con la gestión de inventario y facturación.
+        self.system_prompt = """
+Eres un asistente de voz para gestión de inventario y facturación. 
+Tu nombre es el asistente de {{warehouse_name}}.
 
-INSTRUCCIONES IMPORTANTES:
-1. Siempre responde en español latino de manera natural y amigable
-2. Extrae la información del mensaje del usuario y devuelve un JSON con el comando y los datos
-3. Si falta información importante, pregunta al usuario antes de ejecutar el comando
-4. Los comandos disponibles son:
-   - "agregar_producto": Agregar nuevo producto al inventario
-   - "buscar_producto": Buscar productos por nombre o descripción
-   - "actualizar_producto": Actualizar datos de un producto
-   - "listar_productos": Listar todos los productos
-   - "crear_factura": Crear una nueva factura
-   - "buscar_factura": Buscar una factura específica
-   - "listar_facturas": Listar todas las facturas
-   - "conversacion": Para respuestas conversacionales sin comando específico
+REGLAS IMPORTANTES:
+1. Siempre responde en español latino, de forma natural y amigable
+2. Extrae información de los mensajes del usuario y responde con JSON válido
+3. Si falta información crítica, NO generes comando, solo pregunta por lo que falta
+4. Si falta información no crítica, genera el comando con campos vacíos
 
-FORMATO DE RESPUESTA:
-Tu respuesta DEBE ser SIEMPRE un JSON válido con esta estructura:
+COMANDOS DISPONIBLES:
+- "agregar_producto": Agregar nuevo producto al inventario
+- "agregar_stock": Agregar cantidad a producto existente  
+- "buscar_producto": Buscar productos por nombre/descripción
+- "crear_factura": Crear una nueva factura
+- "actualizar_producto": Modificar datos de un producto
+- "consultar_inventario": Ver todos los productos
+
+FORMATO DE RESPUESTA JSON:
 {{
-    "comando": "nombre_del_comando",
-    "mensaje": "Respuesta conversacional para el usuario",
-    "datos": {{
-        // Datos extraídos del mensaje del usuario
+    "comando": "nombre_comando" o null,
+    "parametros": {{
+        // parámetros específicos del comando
     }},
-    "datos_faltantes": [
-        // Lista de datos que faltan para completar la operación
-    ]
+    "mensaje": "mensaje conversacional para el usuario",
+    "informacion_faltante": ["campo1", "campo2"] // si aplica
 }}
 
-EJEMPLOS:
+EJEMPLOS DE COMANDOS:
+- Agregar producto: {{"comando": "agregar_producto", "parametros": {{"nombre": "Tornillo M5", "descripcion": "Tornillo métrico 5mm", "cantidad": 100, "precio_venta": 150, "precio_proveedor": 80, "ubicacion": "Estante A"}}}}
+- Crear factura: {{"comando": "crear_factura", "parametros": {{"cliente": "Juan Pérez", "telefono": "3001234567", "email": "juan@email.com", "productos": [{{"nombre": "Tornillo M5", "cantidad": 10}}]}}}}
 
-Usuario: "Agrega 50 tornillos al estante A"
-Respuesta:
-{{
-    "comando": "agregar_producto",
-    "mensaje": "Perfecto, voy a agregar 50 tornillos al estante A. ¿Cuál es el precio de venta?",
-    "datos": {{
-        "nombre": "tornillos",
-        "cantidad": 50,
-        "ubicacion": "estante A"
-    }},
-    "datos_faltantes": ["precio_venta"]
-}}
-
-Usuario: "Quiero facturar 10 tornillos a Juan Pérez"
-Respuesta:
-{{
-    "comando": "crear_factura",
-    "mensaje": "Voy a crear una factura para Juan Pérez con 10 tornillos. ¿Tienes su número de contacto?",
-    "datos": {{
-        "cliente_nombre": "Juan Pérez",
-        "items": [
-            {{
-                "producto_nombre": "tornillos",
-                "cantidad": 10
-            }}
-        ]
-    }},
-    "datos_faltantes": ["cliente_contacto"]
-}}
-
-REGLAS PARA DATOS:
-- Para productos: nombre (obligatorio), descripcion, precio_venta, precio_proveedor, cantidad, ubicacion
-- Para facturas: cliente_nombre (obligatorio), cliente_contacto, cliente_email, items (obligatorio)
-- Los items de factura necesitan: producto_nombre o producto_id, cantidad (obligatorio)
-- Si el usuario no especifica datos importantes, márcalos como faltantes
-- Sé inteligente interpretando sinónimos y variaciones del español
-
-Responde SOLO con el JSON, sin texto adicional.
-"""
+Si el usuario dice algo como "vender tornillos M5", identifica que quiere crear una factura pero le falta información del cliente.
+""".format(warehouse_name=os.getenv('WAREHOUSE_NAME', 'TorniCars'))
 
     def process_message(self, user_message):
-        """
-        Procesa un mensaje del usuario y devuelve la respuesta del asistente
-
-        Args:
-            user_message (str): Mensaje del usuario
-
-        Returns:
-            dict: Respuesta del asistente
-        """
+        """Procesa un mensaje del usuario y ejecuta la acción correspondiente"""
         try:
-            # Agregar contexto de conversación
-            context = f"Contexto de conversación anterior: {json.dumps(self.conversation_context[-3:])}\n\n"
-            full_prompt = self.get_system_prompt() + "\n\n" + context + f"Usuario: {user_message}"
-
-            # Generar respuesta con Gemini
+            # Generar respuesta del modelo
+            full_prompt = f"{self.system_prompt}\n\nUsuario: {user_message}"
             response = self.model.generate_content(full_prompt)
-            response_text = response.text.strip()
 
-            # Limpiar y parsear JSON
-            response_text = self._clean_json_response(response_text)
-            assistant_response = json.loads(response_text)
+            # Parsear respuesta JSON
+            try:
+                ai_response = json.loads(response.text)
+            except json.JSONDecodeError:
+                # Si no es JSON válido, tratar como mensaje simple
+                return {
+                    'success': True,
+                    'message': response.text,
+                    'audio_response': response.text
+                }
 
-            # Validar estructura de respuesta
-            required_fields = ['comando', 'mensaje', 'datos']
-            if not all(field in assistant_response for field in required_fields):
-                raise ValueError("Respuesta del LLM incompleta")
+            # Si no hay comando, solo devolver mensaje
+            if not ai_response.get('comando'):
+                return {
+                    'success': True,
+                    'message': ai_response.get('mensaje', 'No entendí tu solicitud'),
+                    'audio_response': ai_response.get('mensaje', 'No entendí tu solicitud')
+                }
 
-            # Agregar al contexto
-            self.conversation_context.append({
-                'user': user_message,
-                'assistant': assistant_response['mensaje'],
-                'timestamp': datetime.now().isoformat()
-            })
+            # Ejecutar comando
+            return self._execute_command(ai_response)
 
-            # Ejecutar comando si es necesario
-            if assistant_response['comando'] != 'conversacion':
-                execution_result = self._execute_command(assistant_response)
-                assistant_response['resultado_ejecucion'] = execution_result
-
-                # Actualizar mensaje si hubo error en la ejecución
-                if not execution_result.get('success', False):
-                    assistant_response[
-                        'mensaje'] += f" Sin embargo, hubo un problema: {execution_result.get('message', 'Error desconocido')}"
-
-            return assistant_response
-
-        except json.JSONDecodeError as e:
-            return {
-                'comando': 'conversacion',
-                'mensaje': 'Lo siento, hubo un error al procesar tu solicitud. ¿Podrías repetirla de otra manera?',
-                'datos': {},
-                'error': f'Error JSON: {str(e)}'
-            }
         except Exception as e:
             return {
-                'comando': 'conversacion',
-                'mensaje': 'Disculpa, tuve un problema técnico. ¿Puedes intentar de nuevo?',
-                'datos': {},
-                'error': str(e)
+                'success': False,
+                'message': f'Error al procesar mensaje: {str(e)}',
+                'audio_response': 'Lo siento, hubo un error al procesar tu solicitud'
             }
 
-    def _clean_json_response(self, response_text):
-        """Limpia la respuesta del LLM para extraer solo el JSON"""
-        # Buscar JSON entre marcadores comunes
-        json_patterns = [
-            r'```json\s*(.*?)\s*```',
-            r'```\s*(.*?)\s*```',
-            r'\{.*\}',
-        ]
-
-        for pattern in json_patterns:
-            match = re.search(pattern, response_text, re.DOTALL)
-            if match:
-                return match.group(1) if 'json' in pattern else match.group(0)
-
-        return response_text.strip()
-
-    def _execute_command(self, assistant_response):
-        """
-        Ejecuta el comando especificado por el asistente
-
-        Args:
-            assistant_response (dict): Respuesta del asistente con comando y datos
-
-        Returns:
-            dict: Resultado de la ejecución
-        """
-        comando = assistant_response['comando']
-        datos = assistant_response['datos']
+    def _execute_command(self, ai_response):
+        """Ejecuta un comando específico"""
+        comando = ai_response['comando']
+        parametros = ai_response.get('parametros', {})
+        mensaje_ia = ai_response.get('mensaje', '')
 
         try:
             if comando == 'agregar_producto':
-                return self._ejecutar_agregar_producto(datos)
+                result = self._agregar_producto(parametros)
+
+            elif comando == 'agregar_stock':
+                result = self._agregar_stock(parametros)
+
             elif comando == 'buscar_producto':
-                return self._ejecutar_buscar_producto(datos)
-            elif comando == 'actualizar_producto':
-                return self._ejecutar_actualizar_producto(datos)
-            elif comando == 'listar_productos':
-                return InventoryManager.listar_todos_productos()
+                result = self._buscar_producto(parametros)
+
             elif comando == 'crear_factura':
-                return self._ejecutar_crear_factura(datos)
-            elif comando == 'buscar_factura':
-                return self._ejecutar_buscar_factura(datos)
-            elif comando == 'listar_facturas':
-                return BillingManager.listar_facturas()
+                result = self._crear_factura(parametros)
+
+            elif comando == 'actualizar_producto':
+                result = self._actualizar_producto(parametros)
+
+            elif comando == 'consultar_inventario':
+                result = self._consultar_inventario(parametros)
+
             else:
-                return {'success': False, 'message': f'Comando no reconocido: {comando}'}
+                result = {
+                    'success': False,
+                    'message': f'Comando "{comando}" no reconocido'
+                }
+
+            # Combinar mensaje de IA con resultado
+            if result['success']:
+                audio_response = f"{mensaje_ia}. {result['message']}"
+            else:
+                audio_response = f"{mensaje_ia}. {result['message']}"
+
+            return {
+                'success': result['success'],
+                'message': result['message'],
+                'audio_response': audio_response,
+                'data': result.get('data'),
+                'action_needed': result.get('action_needed')
+            }
 
         except Exception as e:
-            return {'success': False, 'message': f'Error ejecutando comando: {str(e)}'}
+            return {
+                'success': False,
+                'message': f'Error ejecutando comando {comando}: {str(e)}',
+                'audio_response': 'Hubo un error ejecutando la acción solicitada'
+            }
 
-    def _ejecutar_agregar_producto(self, datos):
-        """Ejecuta el comando de agregar producto"""
-        # Verificar datos obligatorios
-        if not datos.get('nombre'):
-            return {'success': False, 'message': 'El nombre del producto es obligatorio'}
+    def _agregar_producto(self, parametros):
+        """Ejecuta el comando agregar_producto"""
+        nombre = parametros.get('nombre', '').strip()
 
-        return InventoryManager.agregar_producto(
-            nombre=datos.get('nombre', ''),
-            descripcion=datos.get('descripcion', ''),
-            precio_venta=datos.get('precio_venta', 0),
-            precio_proveedor=datos.get('precio_proveedor', 0),
-            cantidad=datos.get('cantidad', 0),
-            ubicacion=datos.get('ubicacion', '')
+        if not nombre:
+            return {
+                'success': False,
+                'message': 'El nombre del producto es obligatorio'
+            }
+
+        result = self.inventory_manager.add_product(
+            name=nombre,
+            description=parametros.get('descripcion', ''),
+            sale_price=parametros.get('precio_venta', 0),
+            supplier_price=parametros.get('precio_proveedor', 0),
+            quantity=parametros.get('cantidad', 0),
+            physical_location=parametros.get('ubicacion', '')
         )
 
-    def _ejecutar_buscar_producto(self, datos):
-        """Ejecuta el comando de buscar producto"""
-        termino = datos.get('termino') or datos.get('nombre') or datos.get('producto_nombre', '')
+        return result
+
+    def _agregar_stock(self, parametros):
+        """Ejecuta el comando agregar_stock"""
+        nombre_producto = parametros.get('producto', '').strip()
+        cantidad = parametros.get('cantidad', 0)
+
+        if not nombre_producto:
+            return {
+                'success': False,
+                'message': 'Necesito el nombre del producto'
+            }
+
+        if cantidad <= 0:
+            return {
+                'success': False,
+                'message': 'La cantidad debe ser mayor a cero'
+            }
+
+        # Buscar producto
+        productos = self.inventory_manager.search_products(nombre_producto)
+
+        if not productos:
+            return {
+                'success': False,
+                'message': f'No encontré productos con el nombre "{nombre_producto}"'
+            }
+
+        # Si hay múltiples, tomar el primero (más similar)
+        producto = productos[0]
+
+        result = self.inventory_manager.add_stock_to_existing(
+            producto['id'], cantidad
+        )
+
+        return result
+
+    def _buscar_producto(self, parametros):
+        """Ejecuta el comando buscar_producto"""
+        termino = parametros.get('termino', '').strip()
 
         if not termino:
-            return {'success': False, 'message': 'Debe especificar un término de búsqueda'}
+            return {
+                'success': False,
+                'message': 'Necesito un término de búsqueda'
+            }
 
-        return InventoryManager.buscar_productos(termino)
+        productos = self.inventory_manager.search_products(termino)
 
-    def _ejecutar_actualizar_producto(self, datos):
-        """Ejecuta el comando de actualizar producto"""
-        producto_id = datos.get('producto_id')
+        if not productos:
+            return {
+                'success': True,
+                'message': f'No encontré productos que coincidan con "{termino}"',
+                'data': []
+            }
 
-        if not producto_id:
-            # Intentar buscar por nombre
-            nombre = datos.get('nombre') or datos.get('producto_nombre')
-            if nombre:
-                busqueda = InventoryManager.buscar_productos(nombre)
-                if busqueda['success'] and len(busqueda['data']) == 1:
-                    producto_id = busqueda['data'][0]['id']
-                else:
-                    return {'success': False, 'message': 'No se pudo identificar el producto a actualizar'}
-            else:
-                return {'success': False, 'message': 'Debe especificar el producto a actualizar'}
-
-        # Preparar datos de actualización
-        datos_actualizacion = {}
-        campos_actualizables = ['nombre', 'descripcion', 'precio_venta', 'precio_proveedor', 'cantidad', 'ubicacion']
-
-        for campo in campos_actualizables:
-            if campo in datos and datos[campo] is not None:
-                datos_actualizacion[campo] = datos[campo]
-
-        return InventoryManager.actualizar_producto(producto_id, **datos_actualizacion)
-
-    def _ejecutar_crear_factura(self, datos):
-        """Ejecuta el comando de crear factura"""
-        # Verificar datos obligatorios
-        if not datos.get('cliente_nombre'):
-            return {'success': False, 'message': 'El nombre del cliente es obligatorio'}
-
-        if not datos.get('items') or len(datos.get('items', [])) == 0:
-            return {'success': False, 'message': 'Debe especificar productos para la factura'}
-
-        # Procesar items
-        items_procesados = []
-
-        for item in datos.get('items', []):
-            item_procesado = {}
-
-            # Buscar producto por nombre si no tiene ID
-            if not item.get('producto_id') and item.get('producto_nombre'):
-                busqueda = InventoryManager.buscar_productos(item['producto_nombre'])
-                if busqueda['success'] and len(busqueda['data']) > 0:
-                    item_procesado['producto_id'] = busqueda['data'][0]['id']
-                else:
-                    return {'success': False, 'message': f'No se encontró el producto: {item["producto_nombre"]}'}
-            elif item.get('producto_id'):
-                item_procesado['producto_id'] = item['producto_id']
-            else:
-                return {'success': False, 'message': 'Cada item debe tener un producto identificable'}
-
-            # Agregar cantidad
-            if not item.get('cantidad') or int(item.get('cantidad', 0)) <= 0:
-                return {'success': False, 'message': 'Cada item debe tener una cantidad válida'}
-
-            item_procesado['cantidad'] = int(item['cantidad'])
-
-            # Precio unitario (opcional, se usa el del producto si no se especifica)
-            if item.get('precio_unitario'):
-                item_procesado['precio_unitario'] = float(item['precio_unitario'])
-
-            items_procesados.append(item_procesado)
-
-        return BillingManager.crear_factura(
-            cliente_nombre=datos['cliente_nombre'],
-            cliente_contacto=datos.get('cliente_contacto', ''),
-            cliente_email=datos.get('cliente_email', ''),
-            items=items_procesados
-        )
-
-    def _ejecutar_buscar_factura(self, datos):
-        """Ejecuta el comando de buscar factura"""
-        factura_id = datos.get('factura_id') or datos.get('id')
-        numero_factura = datos.get('numero_factura')
-
-        if factura_id:
-            return BillingManager.obtener_factura(factura_id)
-        elif numero_factura:
-            # Buscar por número de factura (implementación simplificada)
-            facturas = BillingManager.listar_facturas()
-            if facturas['success']:
-                for factura in facturas['data']:
-                    if factura['numero_factura'] == numero_factura:
-                        return BillingManager.obtener_factura(factura['id'])
-            return {'success': False, 'message': f'No se encontró la factura: {numero_factura}'}
-        else:
-            return {'success': False, 'message': 'Debe especificar el ID o número de factura'}
-
-    def clear_context(self):
-        """Limpia el contexto de conversación"""
-        self.conversation_context = []
-        self.pending_data = {}
-
-    def get_conversation_summary(self):
-        """Obtiene un resumen de la conversación actual"""
-        if not self.conversation_context:
-            return "No hay conversación activa"
+        # Formatear respuesta
+        mensaje = f"Encontré {len(productos)} producto(s):\n"
+        for p in productos[:5]:  # Mostrar máximo 5
+            mensaje += f"- {p['name']}: {p['quantity']} unidades, ${p['sale_price']}\n"
 
         return {
-            'total_messages': len(self.conversation_context),
-            'last_interaction': self.conversation_context[-1] if self.conversation_context else None,
-            'warehouse_name': self.warehouse_name
+            'success': True,
+            'message': mensaje.strip(),
+            'data': productos
         }
+
+    def _crear_factura(self, parametros):
+        """Ejecuta el comando crear_factura"""
+        cliente = parametros.get('cliente', '').strip()
+        productos = parametros.get('productos', [])
+
+        if not cliente:
+            return {
+                'success': False,
+                'message': 'Necesito el nombre del cliente'
+            }
+
+        if not productos:
+            return {
+                'success': False,
+                'message': 'Necesito al menos un producto para facturar'
+            }
+
+        # Procesar productos
+        items_factura = []
+
+        for item in productos:
+            nombre_producto = item.get('nombre', '').strip()
+            cantidad = item.get('cantidad', 0)
+
+            if not nombre_producto or cantidad <= 0:
+                continue
+
+            # Buscar producto
+            productos_encontrados = self.inventory_manager.search_products(nombre_producto)
+
+            if not productos_encontrados:
+                return {
+                    'success': False,
+                    'message': f'Producto "{nombre_producto}" no encontrado en inventario'
+                }
+
+            producto = productos_encontrados[0]
+            items_factura.append({
+                'product_id': producto['id'],
+                'quantity': cantidad
+            })
+
+        if not items_factura:
+            return {
+                'success': False,
+                'message': 'No se pudieron procesar los productos solicitados'
+            }
+
+        # Crear factura
+        result = self.billing_manager.create_invoice(
+            customer_name=cliente,
+            customer_phone=parametros.get('telefono', ''),
+            customer_email=parametros.get('email', ''),
+            items=items_factura
+        )
+
+        return result
+
+    def _actualizar_producto(self, parametros):
+        """Ejecuta el comando actualizar_producto"""
+        nombre_producto = parametros.get('producto', '').strip()
+
+        if not nombre_producto:
+            return {
+                'success': False,
+                'message': 'Necesito el nombre del producto a actualizar'
+            }
+
+        # Buscar producto
+        productos = self.inventory_manager.search_products(nombre_producto)
+
+        if not productos:
+            return {
+                'success': False,
+                'message': f'Producto "{nombre_producto}" no encontrado'
+            }
+
+        producto = productos[0]
+
+        # Construir parámetros de actualización
+        update_params = {}
+        if 'precio_venta' in parametros:
+            update_params['sale_price'] = parametros['precio_venta']
+        if 'precio_proveedor' in parametros:
+            update_params['supplier_price'] = parametros['precio_proveedor']
+        if 'cantidad' in parametros:
+            update_params['quantity'] = parametros['cantidad']
+        if 'descripcion' in parametros:
+            update_params['description'] = parametros['descripcion']
+        if 'ubicacion' in parametros:
+            update_params['physical_location'] = parametros['ubicacion']
+
+        if not update_params:
+            return {
+                'success': False,
+                'message': 'No se especificaron campos para actualizar'
+            }
+
+        result = self.inventory_manager.update_product(producto['id'], **update_params)
+        return result
+
+    def _consultar_inventario(self, parametros):
+        """Ejecuta el comando consultar_inventario"""
+        productos = self.inventory_manager.get_all_products()
+
+        if not productos:
+            return {
+                'success': True,
+                'message': 'El inventario está vacío',
+                'data': []
+            }
+
+        mensaje = f"Tienes {len(productos)} productos en inventario:\n"
+        for p in productos[:10]:  # Mostrar máximo 10
+            mensaje += f"- Ref #{p['reference_number']}: {p['name']} ({p['quantity']} unidades)\n"
+
+        if len(productos) > 10:
+            mensaje += f"... y {len(productos) - 10} productos más"
+
+        return {
+            'success': True,
+            'message': mensaje.strip(),
+            'data': productos
+        }
+
+    def text_to_speech(self, text):
+        """Convierte texto a voz y lo reproduce"""
+        try:
+            # Crear archivo temporal
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+                tts = gTTS(text=text, lang='es', slow=False)
+                tts.save(tmp_file.name)
+
+                # Reproducir audio
+                pygame.mixer.music.load(tmp_file.name)
+                pygame.mixer.music.play()
+
+                # Esperar a que termine
+                while pygame.mixer.music.get_busy():
+                    pygame.time.wait(100)
+
+                # Limpiar archivo temporal
+                os.unlink(tmp_file.name)
+
+                return True
+
+        except Exception as e:
+            print(f"Error en text-to-speech: {str(e)}")
+            return False

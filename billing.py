@@ -1,387 +1,276 @@
+import sqlite3
 from datetime import datetime
-from db import FacturaDB, ProductoDB
 import os
+from db import get_connection, get_next_invoice_number
+from inventory import InventoryManager
 
 
 class BillingManager:
-    """Clase para gestionar la facturación"""
 
-    @staticmethod
-    def validar_datos_factura(cliente_nombre, items):
-        """
-        Valida los datos necesarios para crear una factura
+    def __init__(self):
+        self.inventory_manager = InventoryManager()
+        self.tax_rate = 0.19  # IVA del 19%
 
-        Args:
-            cliente_nombre (str): Nombre del cliente
-            items (list): Lista de items de la factura
-
-        Returns:
-            dict: Resultado de la validación
-        """
-        errores = []
-
-        # Validar nombre del cliente
-        if not cliente_nombre or not cliente_nombre.strip():
-            errores.append("El nombre del cliente es obligatorio")
-
-        # Validar items
-        if not items or len(items) == 0:
-            errores.append("Debe incluir al menos un producto en la factura")
-
-        items_validados = []
-        for i, item in enumerate(items):
-            item_errores = []
-
-            # Validar producto_id
-            if 'producto_id' not in item or not item['producto_id']:
-                item_errores.append(f"Item {i + 1}: ID de producto requerido")
-            else:
-                try:
-                    producto_id = int(item['producto_id'])
-                    producto = ProductoDB.obtener_producto_por_id(producto_id)
-                    if not producto:
-                        item_errores.append(f"Item {i + 1}: Producto no encontrado")
-                    else:
-                        # Validar cantidad
-                        cantidad = int(item.get('cantidad', 0))
-                        if cantidad <= 0:
-                            item_errores.append(f"Item {i + 1}: Cantidad debe ser mayor a 0")
-                        elif producto['cantidad'] < cantidad:
-                            item_errores.append(f"Item {i + 1}: Stock insuficiente. Disponible: {producto['cantidad']}")
-
-                        # Usar precio de venta del producto si no se especifica
-                        precio_unitario = float(item.get('precio_unitario', producto['precio_venta']))
-                        if precio_unitario <= 0:
-                            item_errores.append(f"Item {i + 1}: Precio debe ser mayor a 0")
-
-                        if not item_errores:
-                            items_validados.append({
-                                'producto_id': producto_id,
-                                'cantidad': cantidad,
-                                'precio_unitario': precio_unitario,
-                                'producto_nombre': producto['nombre']
-                            })
-
-                except (ValueError, TypeError):
-                    item_errores.append(f"Item {i + 1}: Datos numéricos inválidos")
-
-            errores.extend(item_errores)
-
-        return {
-            'valido': len(errores) == 0,
-            'errores': errores,
-            'items_validados': items_validados
-        }
-
-    @staticmethod
-    def crear_factura(cliente_nombre, cliente_contacto='', cliente_email='', items=[], datos_faltantes=None):
+    def create_invoice(self, customer_name, customer_phone="", customer_email="", items=None):
         """
         Crea una nueva factura
-
-        Args:
-            cliente_nombre (str): Nombre del cliente
-            cliente_contacto (str): Contacto del cliente
-            cliente_email (str): Email del cliente
-            items (list): Lista de items de la factura
-            datos_faltantes (dict): Datos que faltan por completar
-
-        Returns:
-            dict: Resultado de la operación
+        items: lista de diccionarios con {'product_id': int, 'quantity': int}
         """
-        try:
-            # Validar datos
-            validacion = BillingManager.validar_datos_factura(cliente_nombre, items)
-
-            if not validacion['valido']:
-                return {
-                    'success': False,
-                    'message': 'Datos de factura inválidos',
-                    'data': {
-                        'errores': validacion['errores'],
-                        'datos_faltantes': datos_faltantes or []
-                    }
-                }
-
-            # Crear la factura
-            factura = FacturaDB.crear_factura(
-                cliente_nombre=cliente_nombre.strip(),
-                cliente_contacto=cliente_contacto.strip(),
-                cliente_email=cliente_email.strip(),
-                items=validacion['items_validados']
-            )
-
-            return {
-                'success': True,
-                'message': f'Factura {factura["numero_factura"]} creada correctamente',
-                'data': factura
-            }
-
-        except Exception as e:
+        if not items:
             return {
                 'success': False,
-                'message': f'Error al crear factura: {str(e)}',
-                'data': None
+                'message': 'No se especificaron productos para la factura'
             }
 
-    @staticmethod
-    def obtener_factura(factura_id):
-        """
-        Obtiene una factura completa
+        conn = get_connection()
+        cursor = conn.cursor()
 
-        Args:
-            factura_id (int): ID de la factura
-
-        Returns:
-            dict: Resultado de la operación
-        """
         try:
-            factura_completa = FacturaDB.obtener_factura_completa(int(factura_id))
-
-            if not factura_completa:
-                return {
-                    'success': False,
-                    'message': 'Factura no encontrada',
-                    'data': None
-                }
-
-            return {
-                'success': True,
-                'message': 'Factura encontrada',
-                'data': factura_completa
-            }
-
-        except ValueError:
-            return {
-                'success': False,
-                'message': 'ID de factura inválido',
-                'data': None
-            }
-        except Exception as e:
-            return {
-                'success': False,
-                'message': f'Error al obtener factura: {str(e)}',
-                'data': None
-            }
-
-    @staticmethod
-    def listar_facturas():
-        """
-        Lista todas las facturas
-
-        Returns:
-            dict: Resultado de la operación
-        """
-        try:
-            facturas = FacturaDB.obtener_todas_facturas()
-
-            return {
-                'success': True,
-                'message': f'Se encontraron {len(facturas)} factura(s)',
-                'data': facturas
-            }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'message': f'Error al listar facturas: {str(e)}',
-                'data': []
-            }
-
-    @staticmethod
-    def generar_factura_html(factura_id):
-        """
-        Genera el HTML de una factura para impresión
-
-        Args:
-            factura_id (int): ID de la factura
-
-        Returns:
-            str: HTML de la factura
-        """
-        try:
-            factura_result = BillingManager.obtener_factura(factura_id)
-
-            if not factura_result['success']:
-                return f"<html><body><h1>Error: {factura_result['message']}</h1></body></html>"
-
-            factura_data = factura_result['data']
-            factura = factura_data['factura']
-            items = factura_data['items']
-
-            # Datos de la empresa
-            empresa_nombre = os.getenv('COMPANY_NAME', 'TorniCars S.A.S')
-            empresa_nit = os.getenv('COMPANY_NIT', '900123456-1')
-            empresa_direccion = os.getenv('COMPANY_ADDRESS', 'Calle 123 #45-67, Bucaramanga')
-            empresa_telefono = os.getenv('COMPANY_PHONE', '+57 7 1234567')
-            empresa_email = os.getenv('COMPANY_EMAIL', 'info@tornicars.com')
-
-            # Fecha de creación
-            fecha_factura = datetime.fromisoformat(factura['fecha_creacion'].replace('Z', '+00:00')).strftime(
-                '%d/%m/%Y %H:%M')
-
-            # Generar HTML
-            html = f"""
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Factura {factura['numero_factura']}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        .header {{ text-align: center; margin-bottom: 30px; }}
-        .company-info {{ margin-bottom: 20px; }}
-        .invoice-info {{ display: flex; justify-content: space-between; margin-bottom: 30px; }}
-        .customer-info {{ margin-bottom: 30px; }}
-        table {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
-        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-        th {{ background-color: #f2f2f2; }}
-        .total-section {{ text-align: right; }}
-        .total-row {{ font-weight: bold; }}
-        .print-button {{ display: block; margin: 20px auto; padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }}
-        @media print {{ .print-button {{ display: none; }} }}
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{empresa_nombre}</h1>
-        <p>NIT: {empresa_nit}</p>
-        <p>{empresa_direccion}</p>
-        <p>Tel: {empresa_telefono} | Email: {empresa_email}</p>
-    </div>
-
-    <div class="invoice-info">
-        <div>
-            <h2>FACTURA DE VENTA</h2>
-            <p><strong>Número:</strong> {factura['numero_factura']}</p>
-            <p><strong>Fecha:</strong> {fecha_factura}</p>
-        </div>
-    </div>
-
-    <div class="customer-info">
-        <h3>DATOS DEL CLIENTE</h3>
-        <p><strong>Nombre:</strong> {factura['cliente_nombre']}</p>"""
-
-            if factura['cliente_contacto']:
-                html += f"<p><strong>Contacto:</strong> {factura['cliente_contacto']}</p>"
-
-            if factura['cliente_email']:
-                html += f"<p><strong>Email:</strong> {factura['cliente_email']}</p>"
-
-            html += """
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio Unitario</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>"""
+            # Validar productos y calcular totales
+            invoice_items = []
+            subtotal = 0
 
             for item in items:
-                html += f"""
-            <tr>
-                <td>{item['producto_nombre']}</td>
-                <td>{item['cantidad']}</td>
-                <td>${item['precio_unitario']:,.2f}</td>
-                <td>${item['subtotal']:,.2f}</td>
-            </tr>"""
+                product_id = item['product_id']
+                quantity = item['quantity']
 
-            html += f"""
-        </tbody>
-    </table>
+                product = self.inventory_manager.get_product_by_id(product_id)
+                if not product:
+                    return {
+                        'success': False,
+                        'message': f'Producto con ID {product_id} no encontrado'
+                    }
 
-    <div class="total-section">
-        <p>Subtotal: ${factura['subtotal']:,.2f}</p>
-        <p>IVA (19%): ${factura['iva']:,.2f}</p>
-        <p class="total-row">TOTAL: ${factura['total']:,.2f}</p>
-    </div>
+                if product['sale_price'] is None or product['sale_price'] <= 0:
+                    return {
+                        'success': False,
+                        'message': f'El producto "{product["name"]}" no tiene precio de venta configurado',
+                        'action_needed': 'set_price',
+                        'product': product
+                    }
 
-    <button class="print-button" onclick="window.print()">Imprimir Factura</button>
+                if product['quantity'] < quantity:
+                    return {
+                        'success': False,
+                        'message': f'Stock insuficiente para "{product["name"]}". Disponible: {product["quantity"]}, solicitado: {quantity}'
+                    }
 
-    <script>
-        // Auto-imprimir al cargar la página
-        window.onload = function() {{
-            setTimeout(function() {{
-                window.print();
-            }}, 500);
-        }}
-    </script>
-</body>
-</html>"""
+                item_total = product['sale_price'] * quantity
+                subtotal += item_total
 
-            return html
+                invoice_items.append({
+                    'product_id': product_id,
+                    'product_name': product['name'],
+                    'quantity': quantity,
+                    'unit_price': product['sale_price'],
+                    'total_price': item_total
+                })
+
+            # Calcular impuestos y total
+            tax_amount = subtotal * self.tax_rate
+            total_amount = subtotal + tax_amount
+
+            # Crear la factura
+            invoice_number = get_next_invoice_number()
+
+            cursor.execute('''
+                INSERT INTO invoices (invoice_number, customer_name, customer_phone, 
+                                    customer_email, subtotal, tax_amount, total_amount)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (invoice_number, customer_name, customer_phone, customer_email,
+                  subtotal, tax_amount, total_amount))
+
+            invoice_id = cursor.lastrowid
+
+            # Agregar items de la factura
+            for item in invoice_items:
+                cursor.execute('''
+                    INSERT INTO invoice_items (invoice_id, product_id, product_name,
+                                             quantity, unit_price, total_price)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (invoice_id, item['product_id'], item['product_name'],
+                      item['quantity'], item['unit_price'], item['total_price']))
+
+                # Reducir stock
+                stock_result = self.inventory_manager.reduce_stock(
+                    item['product_id'], item['quantity']
+                )
+
+                if not stock_result['success']:
+                    raise Exception(f"Error al reducir stock: {stock_result['message']}")
+
+            conn.commit()
+
+            return {
+                'success': True,
+                'message': f'Factura {invoice_number} creada exitosamente',
+                'invoice_id': invoice_id,
+                'invoice_number': invoice_number,
+                'subtotal': subtotal,
+                'tax_amount': tax_amount,
+                'total_amount': total_amount,
+                'items': invoice_items
+            }
 
         except Exception as e:
-            return f"<html><body><h1>Error al generar factura: {str(e)}</h1></body></html>"
+            conn.rollback()
+            return {
+                'success': False,
+                'message': f'Error al crear factura: {str(e)}'
+            }
+        finally:
+            conn.close()
 
-    @staticmethod
-    def calcular_totales(items):
-        """
-        Calcula los totales de una lista de items
+    def get_invoice(self, invoice_id):
+        """Obtiene una factura completa con sus items"""
+        conn = get_connection()
+        cursor = conn.cursor()
 
-        Args:
-            items (list): Lista de items con cantidad y precio_unitario
+        # Obtener datos de la factura
+        cursor.execute('''
+            SELECT invoice_number, customer_name, customer_phone, customer_email,
+                   subtotal, tax_amount, total_amount, created_at
+            FROM invoices
+            WHERE id = ?
+        ''', (invoice_id,))
 
-        Returns:
-            dict: Totales calculados
-        """
+        invoice_data = cursor.fetchone()
+
+        if not invoice_data:
+            conn.close()
+            return None
+
+        # Obtener items de la factura
+        cursor.execute('''
+            SELECT product_name, quantity, unit_price, total_price
+            FROM invoice_items
+            WHERE invoice_id = ?
+        ''', (invoice_id,))
+
+        items = cursor.fetchall()
+        conn.close()
+
+        return {
+            'invoice_number': invoice_data[0],
+            'customer_name': invoice_data[1],
+            'customer_phone': invoice_data[2],
+            'customer_email': invoice_data[3],
+            'subtotal': invoice_data[4],
+            'tax_amount': invoice_data[5],
+            'total_amount': invoice_data[6],
+            'created_at': invoice_data[7],
+            'items': [{
+                'product_name': item[0],
+                'quantity': item[1],
+                'unit_price': item[2],
+                'total_price': item[3]
+            } for item in items]
+        }
+
+    def get_all_invoices(self):
+        """Obtiene todas las facturas"""
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT id, invoice_number, customer_name, total_amount, created_at
+            FROM invoices
+            ORDER BY created_at DESC
+        ''')
+
+        invoices = cursor.fetchall()
+        conn.close()
+
+        return [{
+            'id': invoice[0],
+            'invoice_number': invoice[1],
+            'customer_name': invoice[2],
+            'total_amount': invoice[3],
+            'created_at': invoice[4]
+        } for invoice in invoices]
+
+    def generate_invoice_text(self, invoice_id):
+        """Genera el texto de la factura para impresión"""
+        invoice = self.get_invoice(invoice_id)
+
+        if not invoice:
+            return "Factura no encontrada"
+
+        # Obtener información de la empresa desde variables de entorno
+        warehouse_name = os.getenv('WAREHOUSE_NAME', 'TorniCars')
+        company_nit = os.getenv('COMPANY_NIT', '900123456-7')
+        company_address = os.getenv('COMPANY_ADDRESS', 'Dirección no configurada')
+        company_phone = os.getenv('COMPANY_PHONE', 'Teléfono no configurado')
+        company_email = os.getenv('COMPANY_EMAIL', 'Email no configurado')
+
+        # Formatear fecha
+        created_at = datetime.fromisoformat(invoice['created_at'])
+        formatted_date = created_at.strftime('%d/%m/%Y %H:%M')
+
+        # Construir texto de la factura
+        text = f"""
+=====================================
+           {warehouse_name}
+=====================================
+NIT: {company_nit}
+{company_address}
+Tel: {company_phone}
+Email: {company_email}
+
+-------------------------------------
+FACTURA: {invoice['invoice_number']}
+FECHA: {formatted_date}
+-------------------------------------
+
+CLIENTE: {invoice['customer_name']}
+TELÉFONO: {invoice['customer_phone']}
+EMAIL: {invoice['customer_email']}
+
+-------------------------------------
+PRODUCTOS
+-------------------------------------
+"""
+
+        # Agregar productos
+        for item in invoice['items']:
+            text += f"""
+{item['product_name']}
+Cant: {item['quantity']} x ${item['unit_price']:,.2f}
+                    ${item['total_price']:,.2f}
+"""
+
+        # Agregar totales
+        text += f"""
+-------------------------------------
+SUBTOTAL:           ${invoice['subtotal']:,.2f}
+IVA (19%):          ${invoice['tax_amount']:,.2f}
+TOTAL:              ${invoice['total_amount']:,.2f}
+=====================================
+
+Gracias por su compra!
+"""
+
+        return text
+
+    def print_invoice(self, invoice_id):
+        """Envía la factura a la impresora (simulado)"""
+        invoice_text = self.generate_invoice_text(invoice_id)
+
+        # En un entorno real, aquí enviarías a la impresora
+        # Por ahora, guardamos en un archivo
+        filename = f"factura_{invoice_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+
         try:
-            subtotal = sum(item['cantidad'] * item['precio_unitario'] for item in items)
-            iva = subtotal * 0.19
-            total = subtotal + iva
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(invoice_text)
 
             return {
-                'subtotal': round(subtotal, 2),
-                'iva': round(iva, 2),
-                'total': round(total, 2)
+                'success': True,
+                'message': f'Factura guardada en {filename}',
+                'filename': filename
             }
-
         except Exception as e:
             return {
-                'subtotal': 0,
-                'iva': 0,
-                'total': 0,
-                'error': str(e)
+                'success': False,
+                'message': f'Error al guardar factura: {str(e)}'
             }
-
-    @staticmethod
-    def identificar_datos_faltantes_factura(datos):
-        """
-        Identifica qué datos faltan para completar una factura
-
-        Args:
-            datos (dict): Datos actuales de la factura
-
-        Returns:
-            list: Lista de datos faltantes
-        """
-        datos_faltantes = []
-
-        # Datos obligatorios
-        if not datos.get('cliente_nombre', '').strip():
-            datos_faltantes.append('nombre_cliente')
-
-        if not datos.get('items') or len(datos.get('items', [])) == 0:
-            datos_faltantes.append('productos')
-
-        # Validar items
-        items = datos.get('items', [])
-        for i, item in enumerate(items):
-            if not item.get('producto_id'):
-                datos_faltantes.append(f'producto_item_{i + 1}')
-
-            if not item.get('cantidad') or int(item.get('cantidad', 0)) <= 0:
-                datos_faltantes.append(f'cantidad_item_{i + 1}')
-
-            # Verificar si el producto tiene precio
-            if item.get('producto_id'):
-                producto = ProductoDB.obtener_producto_por_id(item['producto_id'])
-                if producto and producto['precio_venta'] <= 0 and not item.get('precio_unitario'):
-                    datos_faltantes.append(f'precio_item_{i + 1}')
-
-        return list(set(datos_faltantes))  # Eliminar duplicados

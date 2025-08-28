@@ -71,6 +71,7 @@ Quiero un proyecto modular con al menos estos archivos:
 * static/ → JS y CSS para frontend (incluyendo reconocimiento de voz y síntesis).
 👉 Dame el código completo y funcional listo para ejecutar.
 comandos para crear la estructura de carpetas y archivos en windows
+asegurate de que no ocurra el error de database is locked
 mkdir templates
 mkdir static
 mkdir static\css

@@ -1,847 +1,817 @@
 // Variables globales
-let currentProducts = [];
-let currentBills = [];
-let recognition = null;
 let isListening = false;
-let synthesis = window.speechSynthesis;
+let recognition = null;
+let currentProducts = [];
+let currentInvoiceId = null;
 
-// Inicialización
+// Inicialización cuando se carga la página
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
-    setupEventListeners();
-    setupSpeechRecognition();
 });
 
-// Configuración inicial de la aplicación
 function initializeApp() {
-    // Cargar tab inicial
-    showTab('dashboard');
+    // Cargar configuración
+    loadConfig();
 
     // Cargar datos iniciales
-    loadStats();
     loadProducts();
-    loadBills();
+    loadInvoices();
 
-    // Configurar primer item de factura
-    addBillItem();
+    // Configurar reconocimiento de voz
+    initVoiceRecognition();
+
+    // Configurar eventos
+    setupEventListeners();
+
+    // Mostrar pestaña de inventario por defecto
+    showTab('inventory');
 }
 
-// Event listeners
+function loadConfig() {
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('warehouse-name').textContent = data.data.warehouse_name;
+            }
+        })
+        .catch(error => console.error('Error cargando configuración:', error));
+}
+
 function setupEventListeners() {
-    // Navegación por tabs
-    document.querySelectorAll('[data-tab]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const tabName = this.getAttribute('data-tab');
-            showTab(tabName);
-            updateNavigation(this);
-        });
+    // Formulario de productos
+    document.getElementById('product-form').addEventListener('submit', handleAddProduct);
+
+    // Formulario de facturas
+    document.getElementById('invoice-form').addEventListener('submit', handleCreateInvoice);
+
+    // Entrada de texto para asistente
+    document.getElementById('text-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendTextMessage();
+        }
     });
 
     // Búsqueda de productos
-    document.getElementById('searchBtn').addEventListener('click', searchProducts);
-    document.getElementById('clearSearchBtn').addEventListener('click', clearSearch);
-    document.getElementById('searchProduct').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') searchProducts();
-    });
-
-    // Productos
-    document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
-    document.getElementById('updateProductBtn').addEventListener('click', updateProduct);
-    document.getElementById('refreshStats').addEventListener('click', loadStats);
-
-    // Facturación
-    document.getElementById('addBillItem').addEventListener('click', addBillItem);
-    document.getElementById('billForm').addEventListener('submit', createBill);
-
-    // Asistente de voz
-    document.getElementById('voiceBtn').addEventListener('mousedown', startListening);
-    document.getElementById('voiceBtn').addEventListener('mouseup', stopListening);
-    document.getElementById('voiceBtn').addEventListener('mouseleave', stopListening);
-    document.getElementById('sendBtn').addEventListener('click', sendMessage);
-    document.getElementById('voiceInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') sendMessage();
-    });
-    document.getElementById('clearChatBtn').addEventListener('click', clearChat);
-
-    // Auto-calcular totales en facturación
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('item-quantity') || e.target.classList.contains('item-price')) {
-            calculateBillTotals();
+    document.getElementById('search-products').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchProducts();
         }
     });
 }
 
-// Navegación por tabs
+// ============ GESTIÓN DE PESTAÑAS ============
 function showTab(tabName) {
-    // Ocultar todos los tabs
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
+    // Ocultar todas las pestañas
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
     });
 
-    // Mostrar tab seleccionado
-    document.getElementById(tabName).classList.add('active');
-}
+    // Mostrar pestaña seleccionada
+    document.getElementById(tabName + '-panel').classList.add('active');
 
-function updateNavigation(activeLink) {
+    // Actualizar estado de navegación
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
-    activeLink.classList.add('active');
+
+    event.target.classList.add('active');
 }
 
-// Funciones de carga de datos
-async function loadStats() {
-    try {
-        const response = await fetch('/api/stats');
-        const result = await response.json();
-
-        if (result.success) {
-            const stats = result.data;
-            document.getElementById('totalProductos').textContent = stats.total_productos;
-            document.getElementById('stockBajo').textContent = stats.productos_stock_bajo;
-            document.getElementById('totalFacturas').textContent = stats.total_facturas;
-            document.getElementById('valorInventario').textContent = `$${stats.valor_inventario.toLocaleString()}`;
-
-            // Cargar productos con stock bajo
-            loadLowStockProducts();
-            loadRecentBills();
-        }
-    } catch (error) {
-        showNotification('Error cargando estadísticas', 'error');
-    }
+// ============ GESTIÓN DE PRODUCTOS ============
+function loadProducts() {
+    fetch('/api/products')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentProducts = data.data;
+                displayProducts(data.data);
+                updateProductsDatalist(data.data);
+            } else {
+                showError('Error cargando productos: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error de conexión al cargar productos');
+        });
 }
 
-async function loadProducts() {
-    try {
-        const response = await fetch('/api/productos');
-        const result = await response.json();
-
-        if (result.success) {
-            currentProducts = result.data;
-            displayProducts(currentProducts);
-        } else {
-            showNotification(result.message, 'error');
-        }
-    } catch (error) {
-        showNotification('Error cargando productos', 'error');
-    }
-}
-
-async function loadBills() {
-    try {
-        const response = await fetch('/api/facturas');
-        const result = await response.json();
-
-        if (result.success) {
-            currentBills = result.data;
-            displayBills(currentBills);
-        } else {
-            showNotification(result.message, 'error');
-        }
-    } catch (error) {
-        showNotification('Error cargando facturas', 'error');
-    }
-}
-
-async function loadLowStockProducts() {
-    try {
-        const response = await fetch('/api/productos/stock-bajo?limite=10');
-        const result = await response.json();
-
-        const container = document.getElementById('productosStockBajo');
-
-        if (result.success && result.data.length > 0) {
-            container.innerHTML = result.data.map(product => `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>${product.nombre}</span>
-                    <span class="badge bg-warning">${product.cantidad}</span>
-                </div>
-            `).join('');
-        } else {
-            container.innerHTML = '<p class="text-muted">No hay productos con stock bajo</p>';
-        }
-    } catch (error) {
-        document.getElementById('productosStockBajo').innerHTML = '<p class="text-danger">Error cargando datos</p>';
-    }
-}
-
-async function loadRecentBills() {
-    try {
-        const response = await fetch('/api/facturas');
-        const result = await response.json();
-
-        const container = document.getElementById('facturasRecientes');
-
-        if (result.success && result.data.length > 0) {
-            const recentBills = result.data.slice(0, 5);
-            container.innerHTML = recentBills.map(bill => `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <strong>${bill.numero_factura}</strong><br>
-                        <small class="text-muted">${bill.cliente_nombre}</small>
-                    </div>
-                    <span class="badge bg-success">$${bill.total.toLocaleString()}</span>
-                </div>
-            `).join('');
-        } else {
-            container.innerHTML = '<p class="text-muted">No hay facturas recientes</p>';
-        }
-    } catch (error) {
-        document.getElementById('facturasRecientes').innerHTML = '<p class="text-danger">Error cargando datos</p>';
-    }
-}
-
-// Mostrar productos en tabla
 function displayProducts(products) {
-    const tbody = document.querySelector('#productsTable tbody');
+    const tbody = document.getElementById('products-table-body');
 
     if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No se encontraron productos</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = products.map(product => {
-        const stockClass = getStockClass(product.cantidad);
-        return `
+        tbody.innerHTML = `
             <tr>
-                <td>${product.id}</td>
-                <td><strong>${product.nombre}</strong></td>
-                <td>${product.descripcion || '-'}</td>
-                <td>$${product.precio_venta.toLocaleString()}</td>
-                <td><span class="stock-indicator ${stockClass}">${product.cantidad}</span></td>
-                <td>${product.ubicacion || '-'}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="editProduct(${product.id})">
-                        <i class="bi bi-pencil"></i>
-                    </button>
+                <td colspan="7" class="text-center text-muted">
+                    <i class="fas fa-inbox me-2"></i>No hay productos en el inventario
                 </td>
             </tr>
         `;
-    }).join('');
-}
-
-function getStockClass(quantity) {
-    if (quantity > 20) return 'stock-high';
-    if (quantity > 5) return 'stock-medium';
-    return 'stock-low';
-}
-
-// Mostrar facturas en tabla
-function displayBills(bills) {
-    const tbody = document.querySelector('#billsTable tbody');
-
-    if (bills.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No se encontraron facturas</td></tr>';
         return;
     }
 
-    tbody.innerHTML = bills.map(bill => `
+    tbody.innerHTML = products.map(product => `
         <tr>
-            <td><strong>${bill.numero_factura}</strong></td>
-            <td>${bill.cliente_nombre}</td>
-            <td>$${bill.total.toLocaleString()}</td>
-            <td>${formatDate(bill.fecha_creacion)}</td>
+            <td><strong>#${product.reference_number}</strong></td>
+            <td>${product.name}</td>
+            <td>${product.description || '<em>Sin descripción</em>'}</td>
+            <td>$${formatPrice(product.sale_price)}</td>
             <td>
-                <button class="btn btn-sm btn-outline-info" onclick="printBill(${bill.id})">
-                    <i class="bi bi-printer"></i>
-                </button>
+                <span class="badge ${getStockBadgeClass(product.quantity)}">
+                    ${product.quantity}
+                </span>
+            </td>
+            <td>${product.physical_location || '<em>Sin ubicar</em>'}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="editProduct(${product.id})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-success" onclick="showAddStockModal(${product.id}, '${product.name}', ${product.quantity})" title="Agregar stock">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
 }
 
-// Funciones de productos
-async function searchProducts() {
-    const searchTerm = document.getElementById('searchProduct').value.trim();
+function getStockBadgeClass(quantity) {
+    if (quantity === 0) return 'badge-out-of-stock';
+    if (quantity <= 5) return 'badge-low-stock';
+    return 'badge-in-stock';
+}
+
+function formatPrice(price) {
+    return new Intl.NumberFormat('es-CO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(price || 0);
+}
+
+function searchProducts() {
+    const searchTerm = document.getElementById('search-products').value.trim();
 
     if (!searchTerm) {
         displayProducts(currentProducts);
         return;
     }
 
-    try {
-        const response = await fetch('/api/productos/buscar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ termino: searchTerm })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            displayProducts(result.data);
+    fetch('/api/products/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ search_term: searchTerm })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayProducts(data.data);
         } else {
-            showNotification(result.message, 'error');
+            showError('Error en búsqueda: ' + data.message);
         }
-    } catch (error) {
-        showNotification('Error en la búsqueda', 'error');
-    }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Error de conexión en búsqueda');
+    });
 }
 
-function clearSearch() {
-    document.getElementById('searchProduct').value = '';
-    displayProducts(currentProducts);
-}
+function handleAddProduct(e) {
+    e.preventDefault();
 
-async function saveProduct() {
     const formData = {
-        nombre: document.getElementById('productName').value,
-        descripcion: document.getElementById('productDescription').value,
-        precio_venta: parseFloat(document.getElementById('productSalePrice').value) || 0,
-        precio_proveedor: parseFloat(document.getElementById('productSupplierPrice').value) || 0,
-        cantidad: parseInt(document.getElementById('productQuantity').value) || 0,
-        ubicacion: document.getElementById('productLocation').value
+        name: document.getElementById('product-name').value,
+        description: document.getElementById('product-description').value,
+        sale_price: parseFloat(document.getElementById('product-sale-price').value) || 0,
+        supplier_price: parseFloat(document.getElementById('product-supplier-price').value) || 0,
+        quantity: parseInt(document.getElementById('product-quantity').value) || 0,
+        physical_location: document.getElementById('product-location').value
     };
 
-    if (!formData.nombre.trim()) {
-        showNotification('El nombre del producto es obligatorio', 'error');
-        return;
-    }
-
-    try {
-        showLoading('Guardando producto...');
-
-        const response = await fetch('/api/productos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        });
-
-        const result = await response.json();
-        hideLoading();
-
-        if (result.success) {
-            showNotification(result.message, 'success');
-            document.getElementById('addProductForm').reset();
-            bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+    fetch('/api/products', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            document.getElementById('product-form').reset();
             loadProducts();
-            loadStats();
         } else {
-            showNotification(result.message, 'error');
+            showError(data.message);
         }
-    } catch (error) {
-        hideLoading();
-        showNotification('Error guardando producto', 'error');
-    }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Error de conexión al agregar producto');
+    });
 }
 
-async function editProduct(productId) {
+function editProduct(productId) {
     const product = currentProducts.find(p => p.id === productId);
-
     if (!product) return;
 
     // Llenar formulario de edición
-    document.getElementById('editProductId').value = product.id;
-    document.getElementById('editProductName').value = product.nombre;
-    document.getElementById('editProductDescription').value = product.descripcion || '';
-    document.getElementById('editProductSalePrice').value = product.precio_venta;
-    document.getElementById('editProductSupplierPrice').value = product.precio_proveedor;
-    document.getElementById('editProductQuantity').value = product.cantidad;
-    document.getElementById('editProductLocation').value = product.ubicacion || '';
+    document.getElementById('edit-product-id').value = product.id;
+    document.getElementById('edit-product-name').value = product.name;
+    document.getElementById('edit-product-description').value = product.description || '';
+    document.getElementById('edit-product-sale-price').value = product.sale_price || '';
+    document.getElementById('edit-product-supplier-price').value = product.supplier_price || '';
+    document.getElementById('edit-product-quantity').value = product.quantity || '';
+    document.getElementById('edit-product-location').value = product.physical_location || '';
 
     // Mostrar modal
     new bootstrap.Modal(document.getElementById('editProductModal')).show();
 }
 
-async function updateProduct() {
-    const productId = document.getElementById('editProductId').value;
+function saveProductChanges() {
+    const productId = document.getElementById('edit-product-id').value;
     const formData = {
-        nombre: document.getElementById('editProductName').value,
-        descripcion: document.getElementById('editProductDescription').value,
-        precio_venta: parseFloat(document.getElementById('editProductSalePrice').value) || 0,
-        precio_proveedor: parseFloat(document.getElementById('editProductSupplierPrice').value) || 0,
-        cantidad: parseInt(document.getElementById('editProductQuantity').value) || 0,
-        ubicacion: document.getElementById('editProductLocation').value
+        name: document.getElementById('edit-product-name').value,
+        description: document.getElementById('edit-product-description').value,
+        sale_price: parseFloat(document.getElementById('edit-product-sale-price').value) || 0,
+        supplier_price: parseFloat(document.getElementById('edit-product-supplier-price').value) || 0,
+        quantity: parseInt(document.getElementById('edit-product-quantity').value) || 0,
+        physical_location: document.getElementById('edit-product-location').value
     };
 
-    try {
-        showLoading('Actualizando producto...');
-
-        const response = await fetch(`/api/productos/${productId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        });
-
-        const result = await response.json();
-        hideLoading();
-
-        if (result.success) {
-            showNotification(result.message, 'success');
+    fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
             bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
             loadProducts();
-            loadStats();
         } else {
-            showNotification(result.message, 'error');
+            showError(data.message);
         }
-    } catch (error) {
-        hideLoading();
-        showNotification('Error actualizando producto', 'error');
-    }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Error de conexión al actualizar producto');
+    });
 }
 
-// Funciones de facturación
-function addBillItem() {
-    const container = document.getElementById('billItems');
-    const itemIndex = container.children.length;
+function showAddStockModal(productId, productName, currentQuantity) {
+    document.getElementById('stock-product-id').value = productId;
+    document.getElementById('stock-product-name').textContent = productName;
+    document.getElementById('stock-current-quantity').textContent = currentQuantity;
+    document.getElementById('stock-quantity').value = 1;
 
-    const itemHtml = `
-        <div class="bill-item" data-item-index="${itemIndex}">
-            <div class="row">
-                <div class="col-md-6">
-                    <select class="form-select item-product" required>
-                        <option value="">Seleccionar producto</option>
-                        ${currentProducts.map(p => `<option value="${p.id}" data-price="${p.precio_venta}">${p.nombre} ($${p.precio_venta})</option>`).join('')}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <input type="number" class="form-control item-quantity" placeholder="Cantidad" min="1" required>
-                </div>
-                <div class="col-md-2">
-                    <input type="number" class="form-control item-price" placeholder="Precio" step="0.01" min="0">
-                </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeBillItem(this)">
-                        <i class="bi bi-trash"></i>
+    new bootstrap.Modal(document.getElementById('addStockModal')).show();
+}
+
+function addStock() {
+    const productId = document.getElementById('stock-product-id').value;
+    const quantity = parseInt(document.getElementById('stock-quantity').value);
+
+    if (quantity <= 0) {
+        showError('La cantidad debe ser mayor a cero');
+        return;
+    }
+
+    fetch(`/api/products/${productId}/add-stock`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ quantity: quantity })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            bootstrap.Modal.getInstance(document.getElementById('addStockModal')).hide();
+            loadProducts();
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Error de conexión al agregar stock');
+    });
+}
+
+function updateProductsDatalist(products) {
+    const datalist = document.getElementById('products-datalist');
+    datalist.innerHTML = products.map(product =>
+        `<option value="${product.name}" data-id="${product.id}" data-price="${product.sale_price}">`
+    ).join('');
+}
+
+// ============ GESTIÓN DE FACTURACIÓN ============
+function loadInvoices() {
+    fetch('/api/invoices')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayInvoices(data.data);
+            } else {
+                showError('Error cargando facturas: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error de conexión al cargar facturas');
+        });
+}
+
+function displayInvoices(invoices) {
+    const tbody = document.getElementById('invoices-table-body');
+
+    if (invoices.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    <i class="fas fa-file-invoice me-2"></i>No hay facturas registradas
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = invoices.map(invoice => `
+        <tr>
+            <td><strong>${invoice.invoice_number}</strong></td>
+            <td>${invoice.customer_name}</td>
+            <td>${formatPrice(invoice.total_amount)}</td>
+            <td>${formatDate(invoice.created_at)}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="viewInvoice(${invoice.id})" title="Ver detalles">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="printInvoice(${invoice.id})" title="Imprimir">
+                        <i class="fas fa-print"></i>
                     </button>
                 </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString('es-CO', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function addInvoiceItem() {
+    const container = document.getElementById('invoice-items');
+    const newItem = document.createElement('div');
+    newItem.className = 'invoice-item mb-3';
+    newItem.innerHTML = `
+        <div class="row">
+            <div class="col-8">
+                <input type="text" class="form-control product-search" placeholder="Buscar producto..." list="products-datalist">
+            </div>
+            <div class="col-3">
+                <input type="number" class="form-control product-quantity" placeholder="Cantidad" min="1">
+            </div>
+            <div class="col-1">
+                <button type="button" class="btn-remove" onclick="removeInvoiceItem(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newItem);
+
+    // Agregar eventos para cálculo automático
+    setupInvoiceItemEvents(newItem);
+}
+
+function removeInvoiceItem(button) {
+    button.closest('.invoice-item').remove();
+    calculateInvoiceTotal();
+}
+
+function setupInvoiceItemEvents(item) {
+    const productSearch = item.querySelector('.product-search');
+    const quantity = item.querySelector('.product-quantity');
+
+    [productSearch, quantity].forEach(input => {
+        input.addEventListener('input', calculateInvoiceTotal);
+    });
+}
+
+function calculateInvoiceTotal() {
+    let total = 0;
+
+    document.querySelectorAll('.invoice-item').forEach(item => {
+        const productName = item.querySelector('.product-search').value;
+        const quantity = parseInt(item.querySelector('.product-quantity').value) || 0;
+
+        const product = currentProducts.find(p => p.name === productName);
+        if (product && quantity > 0) {
+            total += product.sale_price * quantity;
+        }
+    });
+
+    // Agregar IVA (19%)
+    const tax = total * 0.19;
+    const finalTotal = total + tax;
+
+    document.getElementById('invoice-total').textContent = `${formatPrice(finalTotal)}`;
+}
+
+function handleCreateInvoice(e) {
+    e.preventDefault();
+
+    const customerName = document.getElementById('customer-name').value.trim();
+    const customerPhone = document.getElementById('customer-phone').value.trim();
+    const customerEmail = document.getElementById('customer-email').value.trim();
+
+    if (!customerName) {
+        showError('El nombre del cliente es obligatorio');
+        return;
+    }
+
+    // Recopilar productos
+    const items = [];
+    document.querySelectorAll('.invoice-item').forEach(item => {
+        const productName = item.querySelector('.product-search').value.trim();
+        const quantity = parseInt(item.querySelector('.product-quantity').value) || 0;
+
+        if (productName && quantity > 0) {
+            const product = currentProducts.find(p => p.name === productName);
+            if (product) {
+                items.push({
+                    product_id: product.id,
+                    quantity: quantity
+                });
+            }
+        }
+    });
+
+    if (items.length === 0) {
+        showError('Debe agregar al menos un producto a la factura');
+        return;
+    }
+
+    const invoiceData = {
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
+        items: items
+    };
+
+    fetch('/api/invoices', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invoiceData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(`Factura ${data.invoice_number} creada exitosamente`);
+            document.getElementById('invoice-form').reset();
+            document.getElementById('invoice-total').textContent = '$0.00';
+
+            // Mantener solo un item de producto
+            const container = document.getElementById('invoice-items');
+            container.innerHTML = `
+                <div class="invoice-item mb-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <input type="text" class="form-control product-search" placeholder="Buscar producto..." list="products-datalist">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" class="form-control product-quantity" placeholder="Cantidad" min="1">
+                        </div>
+                    </div>
+                </div>
+            `;
+            setupInvoiceItemEvents(container.querySelector('.invoice-item'));
+
+            loadInvoices();
+            loadProducts(); // Recargar productos para actualizar stock
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Error de conexión al crear factura');
+    });
+}
+
+function viewInvoice(invoiceId) {
+    fetch(`/api/invoices/${invoiceId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayInvoiceDetails(data.data);
+                currentInvoiceId = invoiceId;
+                new bootstrap.Modal(document.getElementById('viewInvoiceModal')).show();
+            } else {
+                showError('Error cargando factura: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error de conexión al cargar factura');
+        });
+}
+
+function displayInvoiceDetails(invoice) {
+    const container = document.getElementById('invoice-details');
+
+    container.innerHTML = `
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <h6>Información de la Factura</h6>
+                <p><strong>Número:</strong> ${invoice.invoice_number}</p>
+                <p><strong>Fecha:</strong> ${formatDate(invoice.created_at)}</p>
+            </div>
+            <div class="col-md-6">
+                <h6>Información del Cliente</h6>
+                <p><strong>Nombre:</strong> ${invoice.customer_name}</p>
+                <p><strong>Teléfono:</strong> ${invoice.customer_phone || 'No especificado'}</p>
+                <p><strong>Email:</strong> ${invoice.customer_email || 'No especificado'}</p>
+            </div>
+        </div>
+
+        <h6>Productos</h6>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unit.</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${invoice.items.map(item => `
+                        <tr>
+                            <td>${item.product_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${formatPrice(item.unit_price)}</td>
+                            <td>${formatPrice(item.total_price)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-6"></div>
+            <div class="col-md-6">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Subtotal:</strong></td>
+                        <td class="text-end">${formatPrice(invoice.subtotal)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>IVA (19%):</strong></td>
+                        <td class="text-end">${formatPrice(invoice.tax_amount)}</td>
+                    </tr>
+                    <tr class="table-primary">
+                        <td><strong>TOTAL:</strong></td>
+                        <td class="text-end"><strong>${formatPrice(invoice.total_amount)}</strong></td>
+                    </tr>
+                </table>
             </div>
         </div>
     `;
 
-    container.insertAdjacentHTML('beforeend', itemHtml);
-
-    // Agregar event listener para auto-completar precio
-    const lastItem = container.lastElementChild;
-    const productSelect = lastItem.querySelector('.item-product');
-    const priceInput = lastItem.querySelector('.item-price');
-
-    productSelect.addEventListener('change', function() {
-        const selectedOption = this.selectedOptions[0];
-        if (selectedOption && selectedOption.dataset.price) {
-            priceInput.value = selectedOption.dataset.price;
-            calculateBillTotals();
-        }
-    });
+    // Configurar botón de impresión
+    document.getElementById('print-invoice-btn').onclick = () => printInvoice(currentInvoiceId);
 }
 
-function removeBillItem(button) {
-    button.closest('.bill-item').remove();
-    calculateBillTotals();
-}
-
-function calculateBillTotals() {
-    let subtotal = 0;
-
-    document.querySelectorAll('.bill-item').forEach(item => {
-        const quantity = parseFloat(item.querySelector('.item-quantity').value) || 0;
-        const price = parseFloat(item.querySelector('.item-price').value) || 0;
-        subtotal += quantity * price;
-    });
-
-    const iva = subtotal * 0.19;
-    const total = subtotal + iva;
-
-    document.getElementById('billSubtotal').textContent = subtotal.toFixed(2);
-    document.getElementById('billIva').textContent = iva.toFixed(2);
-    document.getElementById('billTotal').textContent = total.toFixed(2);
-}
-
-async function createBill(e) {
-    e.preventDefault();
-
-    const formData = {
-        cliente_nombre: document.getElementById('clientName').value,
-        cliente_contacto: document.getElementById('clientContact').value,
-        cliente_email: document.getElementById('clientEmail').value,
-        items: []
-    };
-
-    // Recopilar items
-    document.querySelectorAll('.bill-item').forEach(item => {
-        const productId = item.querySelector('.item-product').value;
-        const quantity = parseInt(item.querySelector('.item-quantity').value) || 0;
-        const price = parseFloat(item.querySelector('.item-price').value) || 0;
-
-        if (productId && quantity > 0 && price > 0) {
-            formData.items.push({
-                producto_id: parseInt(productId),
-                cantidad: quantity,
-                precio_unitario: price
-            });
-        }
-    });
-
-    if (!formData.cliente_nombre.trim()) {
-        showNotification('El nombre del cliente es obligatorio', 'error');
-        return;
-    }
-
-    if (formData.items.length === 0) {
-        showNotification('Debe agregar al menos un producto', 'error');
-        return;
-    }
-
-    try {
-        showLoading('Creando factura...');
-
-        const response = await fetch('/api/facturas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        });
-
-        const result = await response.json();
-        hideLoading();
-
-        if (result.success) {
-            showNotification(`Factura ${result.data.numero_factura} creada correctamente`, 'success');
-            document.getElementById('billForm').reset();
-            document.getElementById('billItems').innerHTML = '';
-            addBillItem();
-            calculateBillTotals();
-            loadBills();
-            loadStats();
-
-            // Preguntar si desea imprimir
-            if (confirm('¿Desea imprimir la factura?')) {
-                printBill(result.data.id);
-            }
+function printInvoice(invoiceId) {
+    fetch(`/api/invoices/${invoiceId}/print`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
         } else {
-            showNotification(result.message, 'error');
+            showError('Error al imprimir: ' + data.message);
         }
-    } catch (error) {
-        hideLoading();
-        showNotification('Error creando factura', 'error');
-    }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Error de conexión al imprimir');
+    });
 }
 
-async function printBill(billId) {
-    try {
-        window.open(`/api/facturas/${billId}/imprimir`, '_blank');
-    } catch (error) {
-        showNotification('Error imprimiendo factura', 'error');
-    }
-}
+// ============ ASISTENTE DE VOZ ============
+function initVoiceRecognition() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
 
-// Funciones del asistente de voz
-function setupSpeechRecognition() {
-    if ('webkitSpeechRecognition' in window) {
-        recognition = new webkitSpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'es-ES';
 
         recognition.onstart = function() {
             isListening = true;
-            updateVoiceUI('listening');
+            updateVoiceButton();
         };
 
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
-            document.getElementById('voiceInput').value = transcript;
-            updateVoiceUI('processing');
-            sendMessage();
+            processVoiceMessage(transcript);
         };
 
         recognition.onerror = function(event) {
-            console.error('Error de reconocimiento:', event.error);
-            updateVoiceUI('ready');
-            showNotification('Error en el reconocimiento de voz', 'error');
+            console.error('Error de reconocimiento de voz:', event.error);
+            showError('Error en el reconocimiento de voz: ' + event.error);
+            isListening = false;
+            updateVoiceButton();
         };
 
         recognition.onend = function() {
             isListening = false;
-            updateVoiceUI('ready');
+            updateVoiceButton();
         };
     } else {
-        console.warn('Reconocimiento de voz no soportado');
-        document.getElementById('voiceBtn').disabled = true;
-        document.getElementById('voiceStatus').textContent = 'Reconocimiento de voz no soportado';
+        console.warn('El reconocimiento de voz no está soportado en este navegador');
+        document.getElementById('voice-status').textContent = 'Reconocimiento de voz no disponible';
     }
 }
 
-function startListening() {
-    if (recognition && !isListening) {
+function toggleVoiceRecognition() {
+    if (!recognition) {
+        showError('Reconocimiento de voz no disponible');
+        return;
+    }
+
+    if (isListening) {
+        recognition.stop();
+    } else {
         recognition.start();
     }
 }
 
-function stopListening() {
-    if (recognition && isListening) {
-        recognition.stop();
+function updateVoiceButton() {
+    const btn = document.getElementById('voice-btn');
+    const status = document.getElementById('voice-status');
+
+    if (isListening) {
+        btn.classList.add('listening');
+        status.textContent = 'Escuchando...';
+    } else {
+        btn.classList.remove('listening', 'processing');
+        status.textContent = 'Mantener para hablar';
     }
 }
 
-function updateVoiceUI(state) {
-    const voiceBtn = document.getElementById('voiceBtn');
-    const voiceStatus = document.getElementById('voiceStatus');
+function processVoiceMessage(message) {
+    if (!message.trim()) return;
 
-    voiceBtn.classList.remove('listening', 'processing');
-    voiceStatus.classList.remove('listening', 'processing', 'ready');
+    // Mostrar mensaje del usuario en el chat
+    addChatMessage(message, 'user');
 
-    switch (state) {
-        case 'listening':
-            voiceBtn.classList.add('listening');
-            voiceStatus.classList.add('listening');
-            voiceStatus.textContent = 'Escuchando...';
-            voiceBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
-            break;
-        case 'processing':
-            voiceBtn.classList.add('processing');
-            voiceStatus.classList.add('processing');
-            voiceStatus.textContent = 'Procesando...';
-            voiceBtn.innerHTML = '<i class="bi bi-gear-fill"></i>';
-            break;
-        case 'ready':
-            voiceStatus.classList.add('ready');
-            voiceStatus.textContent = 'Listo para escuchar';
-            voiceBtn.innerHTML = '<i class="bi bi-mic"></i>';
-            break;
-    }
+    // Mostrar estado de procesamiento
+    const btn = document.getElementById('voice-btn');
+    const status = document.getElementById('voice-status');
+    btn.classList.add('processing');
+    status.textContent = 'Procesando...';
+
+    // Enviar mensaje al asistente
+    fetch('/api/voice/process', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Mostrar respuesta del asistente
+        addChatMessage(data.message || data.audio_response, 'assistant');
+
+        // Reproducir respuesta de voz si está disponible
+        if (data.audio_response && 'speechSynthesis' in window) {
+            speakText(data.audio_response);
+        }
+
+        // Si hubo cambios en los datos, recargar
+        if (data.success) {
+            setTimeout(() => {
+                loadProducts();
+                loadInvoices();
+            }, 1000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        addChatMessage('Lo siento, hubo un error procesando tu solicitud.', 'assistant');
+    })
+    .finally(() => {
+        btn.classList.remove('processing');
+        status.textContent = 'Mantener para hablar';
+    });
 }
 
-async function sendMessage() {
-    const input = document.getElementById('voiceInput');
+function sendTextMessage() {
+    const input = document.getElementById('text-input');
     const message = input.value.trim();
 
     if (!message) return;
 
-    // Mostrar mensaje del usuario
-    addChatMessage(message, 'user');
     input.value = '';
-
-    try {
-        updateVoiceUI('processing');
-
-        const response = await fetch('/api/assistant/message', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            const assistantResponse = result.data;
-
-            // Mostrar respuesta del asistente
-            addChatMessage(assistantResponse.mensaje, 'assistant');
-
-            // Reproducir audio si está habilitado
-            if (document.getElementById('autoPlayAudio').checked) {
-                await playTextToSpeech(assistantResponse.mensaje);
-            }
-
-            // Si hubo ejecución de comando, recargar datos relevantes
-            if (assistantResponse.resultado_ejecucion) {
-                if (assistantResponse.comando.includes('producto')) {
-                    loadProducts();
-                    loadStats();
-                } else if (assistantResponse.comando.includes('factura')) {
-                    loadBills();
-                    loadStats();
-                }
-            }
-
-        } else {
-            addChatMessage('Lo siento, hubo un error procesando tu mensaje.', 'assistant');
-        }
-
-    } catch (error) {
-        console.error('Error enviando mensaje:', error);
-        addChatMessage('Disculpa, tuve un problema técnico. Intenta de nuevo.', 'assistant');
-    } finally {
-        updateVoiceUI('ready');
-    }
+    processVoiceMessage(message);
 }
 
 function addChatMessage(message, sender) {
-    const chatContainer = document.getElementById('chatContainer');
+    const container = document.getElementById('chat-container');
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${sender}-message`;
 
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.innerHTML = `<strong>${sender === 'user' ? 'Tú' : 'Asistente'}:</strong> ${message}`;
-
-    messageDiv.appendChild(contentDiv);
-    chatContainer.appendChild(messageDiv);
-
-    // Scroll al último mensaje
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-async function playTextToSpeech(text) {
-    try {
-        // Usar Web Speech API si está disponible
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'es-ES';
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-            speechSynthesis.speak(utterance);
-        } else {
-            // Fallback a servidor (gTTS)
-            const response = await fetch('/api/assistant/tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
-
-            if (response.ok) {
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const audio = new Audio(audioUrl);
-                audio.play();
-
-                audio.onended = () => {
-                    URL.revokeObjectURL(audioUrl);
-                };
-            }
-        }
-    } catch (error) {
-        console.error('Error reproduciendo audio:', error);
-    }
-}
-
-function clearChat() {
-    document.getElementById('chatContainer').innerHTML = `
-        <div class="chat-message assistant-message">
-            <div class="message-content">
-                <strong>Asistente:</strong> ¡Hola! Soy tu asistente de voz. ¿En qué puedo ayudarte?
-            </div>
-        </div>
-    `;
-
-    // Limpiar contexto en el servidor
-    fetch('/api/assistant/context', { method: 'DELETE' });
-}
-
-// Funciones de utilidad
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
+    const now = new Date().toLocaleTimeString('es-CO', {
         hour: '2-digit',
         minute: '2-digit'
     });
+
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            ${sender === 'assistant' ? '<i class="fas fa-robot me-2"></i>' : ''}
+            ${message}
+        </div>
+        <div class="message-time">${now}</div>
+    `;
+
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
 }
 
-function showNotification(message, type = 'info', duration = 5000) {
-    // Crear elemento de notificación
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.style.minWidth = '300px';
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        // Cancelar cualquier síntesis en curso
+        speechSynthesis.cancel();
 
-    notification.innerHTML = `
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-ES';
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+
+        speechSynthesis.speak(utterance);
+    }
+}
+
+// ============ UTILIDADES ============
+function showSuccess(message) {
+    showAlert(message, 'success');
+}
+
+function showError(message) {
+    showAlert(message, 'danger');
+}
+
+function showAlert(message, type) {
+    // Crear elemento de alerta
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+
+    alert.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
 
-    document.body.appendChild(notification);
+    document.body.appendChild(alert);
 
-    // Auto-remover después de la duración especificada
+    // Auto-remover después de 5 segundos
     setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
+        if (alert.parentNode) {
+            alert.remove();
         }
-    }, duration);
+    }, 5000);
 }
 
-function showLoading(text = 'Procesando...') {
-    document.getElementById('loadingText').textContent = text;
-    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-    loadingModal.show();
-}
-
-function hideLoading() {
-    const loadingModal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
-    if (loadingModal) {
-        loadingModal.hide();
-    }
-}
-
-// Funciones auxiliares para eventos
-document.addEventListener('keydown', function(e) {
-    // Atajos de teclado
-    if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-            case '1':
-                e.preventDefault();
-                showTab('dashboard');
-                updateNavigation(document.querySelector('[data-tab="dashboard"]'));
-                break;
-            case '2':
-                e.preventDefault();
-                showTab('inventory');
-                updateNavigation(document.querySelector('[data-tab="inventory"]'));
-                break;
-            case '3':
-                e.preventDefault();
-                showTab('billing');
-                updateNavigation(document.querySelector('[data-tab="billing"]'));
-                break;
-            case '4':
-                e.preventDefault();
-                showTab('assistant');
-                updateNavigation(document.querySelector('[data-tab="assistant"]'));
-                break;
-        }
+// Inicializar eventos de elementos dinámicos cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar el primer item de factura
+    const firstInvoiceItem = document.querySelector('.invoice-item');
+    if (firstInvoiceItem) {
+        setupInvoiceItemEvents(firstInvoiceItem);
     }
 });
-
-// Auto-refresh de estadísticas cada 5 minutos
-setInterval(() => {
-    if (document.getElementById('dashboard').classList.contains('active')) {
-        loadStats();
-    }
-}, 300000);
-
-// Validación de formularios en tiempo real
-document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('form-control') && e.target.hasAttribute('required')) {
-        if (e.target.value.trim()) {
-            e.target.classList.remove('is-invalid');
-            e.target.classList.add('is-valid');
-        } else {
-            e.target.classList.remove('is-valid');
-            e.target.classList.add('is-invalid');
-        }
-    }
-});
-
-// Confirmar antes de cerrar si hay datos no guardados
-window.addEventListener('beforeunload', function(e) {
-    const hasUnsavedData = document.getElementById('billForm').querySelector('input[value], select[value], textarea[value]') ||
-                          document.getElementById('addProductForm').querySelector('input[value], select[value], textarea[value]') ||
-                          document.getElementById('editProductForm').querySelector('input[value], select[value], textarea[value]');
-
-    if (hasUnsavedData) {
-        e.preventDefault();
-        e.returnValue = '';
-    }
-});
-
-console.log(`
-╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-║                                   ASISTENTE DE VOZ PARA INVENTARIO                                         ║
-║                                              Sistema Inicializado                                           ║
-╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
-║ ✓ Interfaz de usuario cargada                                                                              ║
-║ ✓ Reconocimiento de voz configurado                                                                        ║
-║ ✓ Síntesis de voz habilitada                                                                              ║
-║ ✓ Gestión de inventario lista                                                                             ║
-║ ✓ Sistema de facturación operativo                                                                        ║
-║                                                                                                            ║
-║ Atajos de teclado:                                                                                         ║
-║ Ctrl+1: Dashboard | Ctrl+2: Inventario | Ctrl+3: Facturación | Ctrl+4: Asistente                        ║
-╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
-`);
