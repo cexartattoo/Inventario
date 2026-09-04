@@ -1,0 +1,1502 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "app.py",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L1",
+      "id": "app_py",
+      "community": 2,
+      "norm_label": "app.py"
+    },
+    {
+      "label": "before_request()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L16",
+      "id": "inventariointeligente_app_before_request",
+      "community": 2,
+      "norm_label": "before_request()"
+    },
+    {
+      "label": "teardown_request()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L21",
+      "id": "inventariointeligente_app_teardown_request",
+      "community": 2,
+      "norm_label": "teardown_request()"
+    },
+    {
+      "label": "index()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L28",
+      "id": "inventariointeligente_app_index",
+      "community": 2,
+      "norm_label": "index()"
+    },
+    {
+      "label": "get_products_api()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L34",
+      "id": "inventariointeligente_app_get_products_api",
+      "community": 2,
+      "norm_label": "get_products_api()"
+    },
+    {
+      "label": "update_product_api()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L41",
+      "id": "inventariointeligente_app_update_product_api",
+      "community": 2,
+      "norm_label": "update_product_api()"
+    },
+    {
+      "label": "ask_assistant_api()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L70",
+      "id": "inventariointeligente_app_ask_assistant_api",
+      "community": 2,
+      "norm_label": "ask_assistant_api()"
+    },
+    {
+      "label": "setup_database()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L200",
+      "id": "inventariointeligente_app_setup_database",
+      "community": 2,
+      "norm_label": "setup_database()"
+    },
+    {
+      "label": "assistant.py",
+      "file_type": "code",
+      "source_file": "assistant.py",
+      "source_location": "L1",
+      "id": "assistant_py",
+      "community": 5,
+      "norm_label": "assistant.py"
+    },
+    {
+      "label": "get_system_prompt()",
+      "file_type": "code",
+      "source_file": "assistant.py",
+      "source_location": "L14",
+      "id": "inventariointeligente_assistant_get_system_prompt",
+      "community": 5,
+      "norm_label": "get_system_prompt()"
+    },
+    {
+      "label": "process_user_prompt()",
+      "file_type": "code",
+      "source_file": "assistant.py",
+      "source_location": "L70",
+      "id": "inventariointeligente_assistant_process_user_prompt",
+      "community": 5,
+      "norm_label": "process_user_prompt()"
+    },
+    {
+      "label": "Genera el prompt del sistema que instruye al LLM sobre su rol y capacidades.",
+      "file_type": "rationale",
+      "source_file": "assistant.py",
+      "source_location": "L15",
+      "id": "inventariointeligente_assistant_rationale_15",
+      "community": 5,
+      "norm_label": "genera el prompt del sistema que instruye al llm sobre su rol y capacidades."
+    },
+    {
+      "label": "billing.py",
+      "file_type": "code",
+      "source_file": "billing.py",
+      "source_location": "L1",
+      "id": "billing_py",
+      "community": 1,
+      "norm_label": "billing.py"
+    },
+    {
+      "label": "generate_invoice_preview()",
+      "file_type": "code",
+      "source_file": "billing.py",
+      "source_location": "L8",
+      "id": "inventariointeligente_billing_generate_invoice_preview",
+      "community": 1,
+      "norm_label": "generate_invoice_preview()"
+    },
+    {
+      "label": "create_invoice_from_preview()",
+      "file_type": "code",
+      "source_file": "billing.py",
+      "source_location": "L53",
+      "id": "inventariointeligente_billing_create_invoice_from_preview",
+      "community": 1,
+      "norm_label": "create_invoice_from_preview()"
+    },
+    {
+      "label": "get_invoice_details()",
+      "file_type": "code",
+      "source_file": "billing.py",
+      "source_location": "L95",
+      "id": "inventariointeligente_billing_get_invoice_details",
+      "community": 1,
+      "norm_label": "get_invoice_details()"
+    },
+    {
+      "label": "Genera una vista previa de la factura sin guardarla en la BD.     Verifica el s",
+      "file_type": "rationale",
+      "source_file": "billing.py",
+      "source_location": "L9",
+      "id": "inventariointeligente_billing_rationale_9",
+      "community": 1,
+      "norm_label": "genera una vista previa de la factura sin guardarla en la bd.     verifica el s"
+    },
+    {
+      "label": "Crea la factura final en la BD a partir de los datos de la vista previa     y d",
+      "file_type": "rationale",
+      "source_file": "billing.py",
+      "source_location": "L54",
+      "id": "inventariointeligente_billing_rationale_54",
+      "community": 1,
+      "norm_label": "crea la factura final en la bd a partir de los datos de la vista previa     y d"
+    },
+    {
+      "label": "db.py",
+      "file_type": "code",
+      "source_file": "db.py",
+      "source_location": "L1",
+      "id": "db_py",
+      "community": 3,
+      "norm_label": "db.py"
+    },
+    {
+      "label": "get_db_connection()",
+      "file_type": "code",
+      "source_file": "db.py",
+      "source_location": "L7",
+      "id": "inventariointeligente_db_get_db_connection",
+      "community": 3,
+      "norm_label": "get_db_connection()"
+    },
+    {
+      "label": "create_tables()",
+      "file_type": "code",
+      "source_file": "db.py",
+      "source_location": "L19",
+      "id": "inventariointeligente_db_create_tables",
+      "community": 3,
+      "norm_label": "create_tables()"
+    },
+    {
+      "label": "init_db_with_examples()",
+      "file_type": "code",
+      "source_file": "db.py",
+      "source_location": "L72",
+      "id": "inventariointeligente_db_init_db_with_examples",
+      "community": 3,
+      "norm_label": "init_db_with_examples()"
+    },
+    {
+      "label": "Crea y retorna una conexi\u00f3n a la base de datos.     La conexi\u00f3n est\u00e1 configurad",
+      "file_type": "rationale",
+      "source_file": "db.py",
+      "source_location": "L8",
+      "id": "inventariointeligente_db_rationale_8",
+      "community": 3,
+      "norm_label": "crea y retorna una conexion a la base de datos.     la conexion esta configurad"
+    },
+    {
+      "label": "Crea las tablas necesarias en la base de datos si no existen.",
+      "file_type": "rationale",
+      "source_file": "db.py",
+      "source_location": "L20",
+      "id": "inventariointeligente_db_rationale_20",
+      "community": 3,
+      "norm_label": "crea las tablas necesarias en la base de datos si no existen."
+    },
+    {
+      "label": "Puebla la base de datos con datos de ejemplo si est\u00e1 vac\u00eda.",
+      "file_type": "rationale",
+      "source_file": "db.py",
+      "source_location": "L73",
+      "id": "inventariointeligente_db_rationale_73",
+      "community": 3,
+      "norm_label": "puebla la base de datos con datos de ejemplo si esta vacia."
+    },
+    {
+      "label": "inventory.py",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L1",
+      "id": "inventory_py",
+      "community": 1,
+      "norm_label": "inventory.py"
+    },
+    {
+      "label": "find_product_by_name()",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L6",
+      "id": "inventariointeligente_inventory_find_product_by_name",
+      "community": 1,
+      "norm_label": "find_product_by_name()"
+    },
+    {
+      "label": "add_product()",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L26",
+      "id": "inventariointeligente_inventory_add_product",
+      "community": 1,
+      "norm_label": "add_product()"
+    },
+    {
+      "label": "delete_product()",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L50",
+      "id": "inventariointeligente_inventory_delete_product",
+      "community": 1,
+      "norm_label": "delete_product()"
+    },
+    {
+      "label": "update_stock()",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L64",
+      "id": "inventariointeligente_inventory_update_stock",
+      "community": 1,
+      "norm_label": "update_stock()"
+    },
+    {
+      "label": "update_product_details()",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L88",
+      "id": "inventariointeligente_inventory_update_product_details",
+      "community": 1,
+      "norm_label": "update_product_details()"
+    },
+    {
+      "label": "search_products()",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L114",
+      "id": "inventariointeligente_inventory_search_products",
+      "community": 1,
+      "norm_label": "search_products()"
+    },
+    {
+      "label": "get_all_products()",
+      "file_type": "code",
+      "source_file": "inventory.py",
+      "source_location": "L121",
+      "id": "inventariointeligente_inventory_get_all_products",
+      "community": 1,
+      "norm_label": "get_all_products()"
+    },
+    {
+      "label": "Elimina un producto de la base de datos por su ID.",
+      "file_type": "rationale",
+      "source_file": "inventory.py",
+      "source_location": "L51",
+      "id": "inventariointeligente_inventory_rationale_51",
+      "community": 1,
+      "norm_label": "elimina un producto de la base de datos por su id."
+    },
+    {
+      "label": "main.js",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L1",
+      "id": "static_js_main_js",
+      "community": 0,
+      "norm_label": "main.js"
+    },
+    {
+      "label": "voiceButton",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L3",
+      "id": "js_main_voicebutton",
+      "community": 0,
+      "norm_label": "voicebutton"
+    },
+    {
+      "label": "statusText",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L4",
+      "id": "js_main_statustext",
+      "community": 0,
+      "norm_label": "statustext"
+    },
+    {
+      "label": "conversationLog",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L5",
+      "id": "js_main_conversationlog",
+      "community": 0,
+      "norm_label": "conversationlog"
+    },
+    {
+      "label": "inventoryTableBody",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L6",
+      "id": "js_main_inventorytablebody",
+      "community": 0,
+      "norm_label": "inventorytablebody"
+    },
+    {
+      "label": "searchInventoryInput",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L7",
+      "id": "js_main_searchinventoryinput",
+      "community": 0,
+      "norm_label": "searchinventoryinput"
+    },
+    {
+      "label": "invoiceDisplay",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L8",
+      "id": "js_main_invoicedisplay",
+      "community": 0,
+      "norm_label": "invoicedisplay"
+    },
+    {
+      "label": "chatInput",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L9",
+      "id": "js_main_chatinput",
+      "community": 0,
+      "norm_label": "chatinput"
+    },
+    {
+      "label": "sendButton",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L10",
+      "id": "js_main_sendbutton",
+      "community": 0,
+      "norm_label": "sendbutton"
+    },
+    {
+      "label": "editProductModal",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L11",
+      "id": "js_main_editproductmodal",
+      "community": 0,
+      "norm_label": "editproductmodal"
+    },
+    {
+      "label": "saveChangesBtn",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L12",
+      "id": "js_main_savechangesbtn",
+      "community": 0,
+      "norm_label": "savechangesbtn"
+    },
+    {
+      "label": "assistantTab",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L14",
+      "id": "js_main_assistanttab",
+      "community": 0,
+      "norm_label": "assistanttab"
+    },
+    {
+      "label": "billingTab",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L15",
+      "id": "js_main_billingtab",
+      "community": 0,
+      "norm_label": "billingtab"
+    },
+    {
+      "label": "conversationHistory",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L19",
+      "id": "js_main_conversationhistory",
+      "community": 0,
+      "norm_label": "conversationhistory"
+    },
+    {
+      "label": "allProducts",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L20",
+      "id": "js_main_allproducts",
+      "community": 0,
+      "norm_label": "allproducts"
+    },
+    {
+      "label": "recognition",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L30",
+      "id": "js_main_recognition",
+      "community": 0,
+      "norm_label": "recognition"
+    },
+    {
+      "label": "loadVoices()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L35",
+      "id": "js_main_loadvoices",
+      "community": 0,
+      "norm_label": "loadvoices()"
+    },
+    {
+      "label": "addMessageToLog()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L45",
+      "id": "js_main_addmessagetolog",
+      "community": 4,
+      "norm_label": "addmessagetolog()"
+    },
+    {
+      "label": "speak()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L55",
+      "id": "js_main_speak",
+      "community": 4,
+      "norm_label": "speak()"
+    },
+    {
+      "label": "renderInventory()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L64",
+      "id": "js_main_renderinventory",
+      "community": 4,
+      "norm_label": "renderinventory()"
+    },
+    {
+      "label": "renderInvoicePreview()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L95",
+      "id": "js_main_renderinvoicepreview",
+      "community": 4,
+      "norm_label": "renderinvoicepreview()"
+    },
+    {
+      "label": "addInvoiceActionListeners()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L133",
+      "id": "js_main_addinvoiceactionlisteners",
+      "community": 4,
+      "norm_label": "addinvoiceactionlisteners()"
+    },
+    {
+      "label": "fetchAllProducts()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L139",
+      "id": "js_main_fetchallproducts",
+      "community": 4,
+      "norm_label": "fetchallproducts()"
+    },
+    {
+      "label": "processCommand()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L151",
+      "id": "js_main_processcommand",
+      "community": 4,
+      "norm_label": "processcommand()"
+    },
+    {
+      "label": "confirmInvoice()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L200",
+      "id": "js_main_confirminvoice",
+      "community": 2,
+      "norm_label": "confirminvoice()"
+    },
+    {
+      "label": "printInvoice()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L201",
+      "id": "js_main_printinvoice",
+      "community": 0,
+      "norm_label": "printinvoice()"
+    },
+    {
+      "label": "cancelInvoice()",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L202",
+      "id": "js_main_cancelinvoice",
+      "community": 0,
+      "norm_label": "cancelinvoice()"
+    },
+    {
+      "label": "searchTerm",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L225",
+      "id": "js_main_searchterm",
+      "community": 0,
+      "norm_label": "searchterm"
+    },
+    {
+      "label": "filteredProducts",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L226",
+      "id": "js_main_filteredproducts",
+      "community": 0,
+      "norm_label": "filteredproducts"
+    },
+    {
+      "label": "editButton",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L235",
+      "id": "js_main_editbutton",
+      "community": 0,
+      "norm_label": "editbutton"
+    },
+    {
+      "label": "updatedProduct",
+      "file_type": "code",
+      "source_file": "static/js/main.js",
+      "source_location": "L251",
+      "id": "js_main_updatedproduct",
+      "community": 0,
+      "norm_label": "updatedproduct"
+    },
+    {
+      "label": "requirements.txt",
+      "file_type": "code",
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "requirements_txt",
+      "community": 6,
+      "norm_label": "requirements.txt"
+    },
+    {
+      "label": "index.html",
+      "file_type": "code",
+      "source_file": "templates/index.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "templates_index_html",
+      "community": 2,
+      "norm_label": "index.html"
+    },
+    {
+      "label": "style.css",
+      "file_type": "code",
+      "source_file": "static/css/style.css",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "static_css_style_css",
+      "community": 2,
+      "norm_label": "style.css"
+    },
+    {
+      "label": "prompit.txt",
+      "file_type": "document",
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "prompit_txt",
+      "community": 7,
+      "norm_label": "prompit.txt"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventariointeligente_app_before_request",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventariointeligente_app_teardown_request",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventariointeligente_app_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventariointeligente_app_get_products_api",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L41",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventariointeligente_app_update_product_api",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventariointeligente_app_ask_assistant_api",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L189",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "js_main_confirminvoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L200",
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventariointeligente_app_setup_database",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "db_py"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "inventory_py"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "billing_py"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "assistant_py"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "app_py",
+      "target": "templates_index_html"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "templates/index.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "app_py"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "assistant.py",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "assistant_py",
+      "target": "inventariointeligente_assistant_get_system_prompt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "assistant.py",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "assistant_py",
+      "target": "inventariointeligente_assistant_process_user_prompt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "assistant_py",
+      "target": "inventory_py"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "assistant.py",
+      "source_location": "L71",
+      "weight": 1.0,
+      "source": "inventariointeligente_assistant_process_user_prompt",
+      "target": "inventariointeligente_assistant_get_system_prompt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "assistant.py",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "inventariointeligente_assistant_rationale_15",
+      "target": "inventariointeligente_assistant_get_system_prompt",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "billing.py",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "billing_py",
+      "target": "inventariointeligente_billing_generate_invoice_preview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "billing.py",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "billing_py",
+      "target": "inventariointeligente_billing_create_invoice_from_preview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "billing.py",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "billing_py",
+      "target": "inventariointeligente_billing_get_invoice_details",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "prompit.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "billing_py",
+      "target": "inventory_py"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "billing.py",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "inventariointeligente_billing_rationale_9",
+      "target": "inventariointeligente_billing_generate_invoice_preview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "billing.py",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "inventariointeligente_billing_generate_invoice_preview",
+      "target": "inventariointeligente_inventory_find_product_by_name"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "billing.py",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "inventariointeligente_billing_rationale_54",
+      "target": "inventariointeligente_billing_create_invoice_from_preview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "billing.py",
+      "source_location": "L80",
+      "weight": 1.0,
+      "source": "inventariointeligente_billing_create_invoice_from_preview",
+      "target": "inventariointeligente_inventory_update_stock"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "db_py",
+      "target": "inventariointeligente_db_get_db_connection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "db_py",
+      "target": "inventariointeligente_db_create_tables",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L72",
+      "weight": 1.0,
+      "source": "db_py",
+      "target": "inventariointeligente_db_init_db_with_examples",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "inventariointeligente_db_create_tables",
+      "target": "inventariointeligente_db_get_db_connection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L76",
+      "weight": 1.0,
+      "source": "inventariointeligente_db_init_db_with_examples",
+      "target": "inventariointeligente_db_get_db_connection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "inventariointeligente_db_rationale_8",
+      "target": "inventariointeligente_db_get_db_connection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "inventariointeligente_db_rationale_20",
+      "target": "inventariointeligente_db_create_tables",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "db.py",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "inventariointeligente_db_rationale_73",
+      "target": "inventariointeligente_db_init_db_with_examples",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "inventory_py",
+      "target": "inventariointeligente_inventory_find_product_by_name",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "inventory_py",
+      "target": "inventariointeligente_inventory_add_product",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L50",
+      "weight": 1.0,
+      "source": "inventory_py",
+      "target": "inventariointeligente_inventory_delete_product",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "inventory_py",
+      "target": "inventariointeligente_inventory_update_stock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L88",
+      "weight": 1.0,
+      "source": "inventory_py",
+      "target": "inventariointeligente_inventory_update_product_details",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L114",
+      "weight": 1.0,
+      "source": "inventory_py",
+      "target": "inventariointeligente_inventory_search_products",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L121",
+      "weight": 1.0,
+      "source": "inventory_py",
+      "target": "inventariointeligente_inventory_get_all_products",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "inventariointeligente_inventory_add_product",
+      "target": "inventariointeligente_inventory_find_product_by_name",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "inventory.py",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "inventariointeligente_inventory_rationale_51",
+      "target": "inventariointeligente_inventory_delete_product",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_voicebutton",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_statustext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_conversationlog",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_inventorytablebody",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_searchinventoryinput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_invoicedisplay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_chatinput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_sendbutton",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_editproductmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_savechangesbtn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_assistanttab",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_billingtab",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_conversationhistory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_allproducts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_recognition",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_loadvoices",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_addmessagetolog",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_speak",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_renderinventory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_renderinvoicepreview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L133",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_addinvoiceactionlisteners",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L139",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_fetchallproducts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L151",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_processcommand",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L200",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_confirminvoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L201",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_printinvoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L202",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_cancelinvoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L225",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_searchterm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L226",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_filteredproducts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L235",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_editbutton",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L251",
+      "weight": 1.0,
+      "source": "static_js_main_js",
+      "target": "js_main_updatedproduct",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "templates/index.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "templates_index_html",
+      "target": "static_js_main_js"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L147",
+      "weight": 1.0,
+      "source": "js_main_fetchallproducts",
+      "target": "js_main_addmessagetolog",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L154",
+      "weight": 1.0,
+      "source": "js_main_processcommand",
+      "target": "js_main_addmessagetolog",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L173",
+      "weight": 1.0,
+      "source": "js_main_processcommand",
+      "target": "js_main_speak",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L144",
+      "weight": 1.0,
+      "source": "js_main_fetchallproducts",
+      "target": "js_main_renderinventory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L180",
+      "weight": 1.0,
+      "source": "js_main_processcommand",
+      "target": "js_main_renderinventory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L130",
+      "weight": 1.0,
+      "source": "js_main_renderinvoicepreview",
+      "target": "js_main_addinvoiceactionlisteners",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L185",
+      "weight": 1.0,
+      "source": "js_main_processcommand",
+      "target": "js_main_renderinvoicepreview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "static/js/main.js",
+      "source_location": "L182",
+      "weight": 1.0,
+      "source": "js_main_processcommand",
+      "target": "js_main_fetchallproducts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "templates/index.html",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "templates_index_html",
+      "target": "static_css_style_css"
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "cb7b75945b5cdac6cb001cf3a0fceca1aac38aea"
+}

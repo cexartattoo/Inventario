@@ -36,6 +36,36 @@ def get_products_api():
     return jsonify(products)
 
 
+# NUEVO ENDPOINT PARA ACTUALIZAR PRODUCTOS DESDE LA UI
+@app.route('/api/product/update/<int:product_id>', methods=['POST'])
+def update_product_api(product_id):
+    data = request.json
+    # Mapeo de claves del frontend a las esperadas por la función de actualización
+    details_to_update = {
+        'nuevo_nombre': data.get('name'),
+        'descripcion': data.get('description'),
+        'precio_venta': data.get('sale_price'),
+        'ubicacion': data.get('location')
+    }
+    # La cantidad se actualiza por separado
+    quantity = data.get('quantity')
+
+    try:
+        conn = g.db_conn
+        # Actualizar detalles
+        inventory.update_product_details(conn, product_id, details_to_update)
+
+        # Actualizar cantidad (stock)
+        cursor = conn.cursor()
+        cursor.execute('UPDATE products SET quantity = ? WHERE id = ?', (quantity, product_id))
+        conn.commit()
+
+        return jsonify({"status": "success", "message": "Producto actualizado correctamente."})
+    except Exception as e:
+        print(f"Error al actualizar producto: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/ask', methods=['POST'])
 def ask_assistant_api():
     data = request.json
@@ -130,12 +160,19 @@ def ask_assistant_api():
                 execution_result = {"products": all_products}
 
             elif command == 'crear_factura':
-                preview_data = billing.generate_invoice_preview(conn, **command_data)
-                if preview_data['status'] == 'success':
-                    spoken_response = "He generado una vista previa de la factura. Por favor, revísala y confírmala."
-                    execution_result = {"invoice_preview": preview_data['preview']}
+                client_name = command_data.get('nombre_cliente')
+                items = command_data.get('items', [])
+
+                if not client_name or not items:
+                    spoken_response = "Para crear la factura, necesito el nombre del cliente y al menos un producto."
                 else:
-                    spoken_response = preview_data['message']
+                    preview_data = billing.generate_invoice_preview(conn, client_name=client_name, items=items,
+                                                                    **command_data)
+                    if preview_data['status'] == 'success':
+                        spoken_response = "He generado una vista previa de la factura. Por favor, revísala y confírmala."
+                        execution_result = {"invoice_preview": preview_data['preview']}
+                    else:
+                        spoken_response = preview_data['message']
 
         except Exception as e:
             spoken_response = f"Ocurrió un error al ejecutar el comando: {e}"
@@ -168,10 +205,4 @@ def setup_database():
 
 
 if __name__ == '__main__':
-    setup_database()
-    app.run(
-        host='0.0.0.0',
-        port=5001,
-        debug=False,
-        ssl_context='adhoc'
-    )
+    app.run(host='0.0.0.0', port=5001, debug=True, ssl_context='adhoc')

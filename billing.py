@@ -1,28 +1,24 @@
 import os
-from inventory import update_stock
+from datetime import datetime
+from inventory import update_stock, find_product_by_name
 
 TAX_RATE = float(os.getenv('INVOICE_TAX_RATE', 19.0)) / 100.0
 
 
-def create_invoice(conn, client_name, client_contact, client_email, items):
+def generate_invoice_preview(conn, client_name, items, **kwargs):
     """
-    Crea una nueva factura.
-    Ahora recibe la conexión a la BD como parámetro y la pasa a las funciones que la necesiten.
+    Genera una vista previa de la factura sin guardarla en la BD.
+    Verifica el stock y calcula los totales.
     """
-    cursor = conn.cursor()
-
     subtotal = 0
-    invoice_items_data = []
+    preview_items = []
 
-    for item in items:
-        product_id = item['product_id']
-        quantity = item['quantity']
-
-        cursor.execute('SELECT * FROM products WHERE id = ?', (product_id,))
-        product = cursor.fetchone()
+    for item_data in items:
+        product = find_product_by_name(conn, item_data['nombre_producto'])
+        quantity = item_data['quantity']
 
         if not product:
-            return {"status": "error", "message": f"El producto con ID {product_id} no existe."}
+            return {"status": "error", "message": f"El producto '{item_data['nombre_producto']}' no existe."}
 
         if product['quantity'] < quantity:
             return {"status": "error",
@@ -30,8 +26,9 @@ def create_invoice(conn, client_name, client_contact, client_email, items):
 
         item_total = product['sale_price'] * quantity
         subtotal += item_total
-        invoice_items_data.append({
-            "product_id": product_id,
+        preview_items.append({
+            "product_id": product['id'],
+            "name": product['name'],
             "quantity": quantity,
             "unit_price": product['sale_price']
         })
@@ -39,30 +36,55 @@ def create_invoice(conn, client_name, client_contact, client_email, items):
     tax = subtotal * TAX_RATE
     total = subtotal + tax
 
+    preview = {
+        "client_name": client_name,
+        "client_contact": kwargs.get('contacto_cliente'),
+        "client_email": kwargs.get('email_cliente'),
+        "created_at": datetime.now().isoformat(),
+        "items": preview_items,
+        "subtotal": subtotal,
+        "tax": tax,
+        "total": total
+    }
+
+    return {"status": "success", "preview": preview}
+
+
+def create_invoice_from_preview(conn, invoice_data):
+    """
+    Crea la factura final en la BD a partir de los datos de la vista previa
+    y descuenta el stock.
+    """
+    cursor = conn.cursor()
     try:
         cursor.execute('''
             INSERT INTO invoices (client_name, client_contact, client_email, subtotal, tax, total)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (client_name, client_contact, client_email, subtotal, tax, total))
+        ''', (
+            invoice_data['client_name'],
+            invoice_data.get('client_contact'),
+            invoice_data.get('client_email'),
+            invoice_data['subtotal'],
+            invoice_data['tax'],
+            invoice_data['total']
+        ))
 
         invoice_id = cursor.lastrowid
 
-        for item_data in invoice_items_data:
+        for item_data in invoice_data['items']:
             cursor.execute('''
                 INSERT INTO invoice_items (invoice_id, product_id, quantity, unit_price)
                 VALUES (?, ?, ?, ?)
             ''', (invoice_id, item_data['product_id'], item_data['quantity'], item_data['unit_price']))
 
-            # Pasamos la misma conexión a update_stock para evitar el bloqueo
             update_stock(conn, item_data['product_id'], -item_data['quantity'])
 
         conn.commit()
 
         return {
             "status": "success",
-            "message": f"Factura #{invoice_id} creada exitosamente para {client_name}.",
-            "invoice_id": invoice_id,
-            "total": total
+            "message": f"Factura #{invoice_id} confirmada y guardada exitosamente.",
+            "invoice_id": invoice_id
         }
 
     except Exception as e:
@@ -71,12 +93,7 @@ def create_invoice(conn, client_name, client_contact, client_email, items):
 
 
 def get_invoice_details(conn, invoice_id):
-    """
-    Obtiene los detalles completos de una factura para su impresión.
-    Ahora recibe la conexión a la BD como parámetro.
-    """
     cursor = conn.cursor()
-
     cursor.execute('SELECT * FROM invoices WHERE id = ?', (invoice_id,))
     invoice = cursor.fetchone()
     if not invoice:

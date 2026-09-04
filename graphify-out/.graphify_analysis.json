@@ -1,0 +1,179 @@
+{
+  "communities": {
+    "0": [
+      "js_main_allproducts",
+      "js_main_assistanttab",
+      "js_main_billingtab",
+      "js_main_cancelinvoice",
+      "js_main_chatinput",
+      "js_main_conversationhistory",
+      "js_main_conversationlog",
+      "js_main_editbutton",
+      "js_main_editproductmodal",
+      "js_main_filteredproducts",
+      "js_main_inventorytablebody",
+      "js_main_invoicedisplay",
+      "js_main_loadvoices",
+      "js_main_printinvoice",
+      "js_main_recognition",
+      "js_main_savechangesbtn",
+      "js_main_searchinventoryinput",
+      "js_main_searchterm",
+      "js_main_sendbutton",
+      "js_main_statustext",
+      "js_main_updatedproduct",
+      "js_main_voicebutton",
+      "static_js_main_js"
+    ],
+    "1": [
+      "billing_py",
+      "inventariointeligente_billing_create_invoice_from_preview",
+      "inventariointeligente_billing_generate_invoice_preview",
+      "inventariointeligente_billing_get_invoice_details",
+      "inventariointeligente_billing_rationale_54",
+      "inventariointeligente_billing_rationale_9",
+      "inventariointeligente_inventory_add_product",
+      "inventariointeligente_inventory_delete_product",
+      "inventariointeligente_inventory_find_product_by_name",
+      "inventariointeligente_inventory_get_all_products",
+      "inventariointeligente_inventory_rationale_51",
+      "inventariointeligente_inventory_search_products",
+      "inventariointeligente_inventory_update_product_details",
+      "inventariointeligente_inventory_update_stock",
+      "inventory_py"
+    ],
+    "2": [
+      "app_py",
+      "inventariointeligente_app_ask_assistant_api",
+      "inventariointeligente_app_before_request",
+      "inventariointeligente_app_get_products_api",
+      "inventariointeligente_app_index",
+      "inventariointeligente_app_setup_database",
+      "inventariointeligente_app_teardown_request",
+      "inventariointeligente_app_update_product_api",
+      "js_main_confirminvoice",
+      "static_css_style_css",
+      "templates_index_html"
+    ],
+    "3": [
+      "db_py",
+      "inventariointeligente_db_create_tables",
+      "inventariointeligente_db_get_db_connection",
+      "inventariointeligente_db_init_db_with_examples",
+      "inventariointeligente_db_rationale_20",
+      "inventariointeligente_db_rationale_73",
+      "inventariointeligente_db_rationale_8"
+    ],
+    "4": [
+      "js_main_addinvoiceactionlisteners",
+      "js_main_addmessagetolog",
+      "js_main_fetchallproducts",
+      "js_main_processcommand",
+      "js_main_renderinventory",
+      "js_main_renderinvoicepreview",
+      "js_main_speak"
+    ],
+    "5": [
+      "assistant_py",
+      "inventariointeligente_assistant_get_system_prompt",
+      "inventariointeligente_assistant_process_user_prompt",
+      "inventariointeligente_assistant_rationale_15"
+    ],
+    "6": [
+      "requirements_txt"
+    ],
+    "7": [
+      "prompit_txt"
+    ]
+  },
+  "cohesion": {
+    "0": 0.09,
+    "1": 0.16,
+    "2": 0.18,
+    "3": 0.38,
+    "4": 0.38,
+    "5": 0.67,
+    "6": 1.0,
+    "7": 1.0
+  },
+  "gods": [
+    {
+      "id": "js_main_processcommand",
+      "label": "processCommand()",
+      "degree": 6
+    },
+    {
+      "id": "inventariointeligente_db_get_db_connection",
+      "label": "get_db_connection()",
+      "degree": 4
+    },
+    {
+      "id": "js_main_fetchallproducts",
+      "label": "fetchAllProducts()",
+      "degree": 4
+    },
+    {
+      "id": "inventariointeligente_assistant_get_system_prompt",
+      "label": "get_system_prompt()",
+      "degree": 3
+    },
+    {
+      "id": "inventariointeligente_billing_generate_invoice_preview",
+      "label": "generate_invoice_preview()",
+      "degree": 3
+    },
+    {
+      "id": "inventariointeligente_billing_create_invoice_from_preview",
+      "label": "create_invoice_from_preview()",
+      "degree": 3
+    },
+    {
+      "id": "inventariointeligente_db_create_tables",
+      "label": "create_tables()",
+      "degree": 3
+    },
+    {
+      "id": "inventariointeligente_db_init_db_with_examples",
+      "label": "init_db_with_examples()",
+      "degree": 3
+    },
+    {
+      "id": "inventariointeligente_inventory_find_product_by_name",
+      "label": "find_product_by_name()",
+      "degree": 3
+    },
+    {
+      "id": "js_main_addmessagetolog",
+      "label": "addMessageToLog()",
+      "degree": 3
+    }
+  ],
+  "surprises": [
+    {
+      "source": "generate_invoice_preview()",
+      "target": "find_product_by_name()",
+      "source_files": [
+        "billing.py",
+        "inventory.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "create_invoice_from_preview()",
+      "target": "update_stock()",
+      "source_files": [
+        "billing.py",
+        "inventory.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    }
+  ],
+  "tokens": {
+    "input": 4144,
+    "output": 1107
+  }
+}
