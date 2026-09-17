@@ -67,6 +67,15 @@
       "norm_label": "ask_assistant_api()"
     },
     {
+      "label": "confirm_invoice_api()",
+      "file_type": "code",
+      "source_file": "app.py",
+      "source_location": "L189",
+      "id": "inventariointeligente_app_confirm_invoice_api",
+      "community": 2,
+      "norm_label": "confirm_invoice_api()"
+    },
+    {
       "label": "setup_database()",
       "file_type": "code",
       "source_file": "app.py",
@@ -597,9 +606,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "requirements_txt",
       "community": 6,
-      "norm_label": "requirements.txt"
+      "norm_label": "requirements.txt",
+      "id": "requirements_txt"
     },
     {
       "label": "index.html",
@@ -610,9 +619,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "templates_index_html",
       "community": 2,
-      "norm_label": "index.html"
+      "norm_label": "index.html",
+      "id": "templates_index_html"
     },
     {
       "label": "style.css",
@@ -623,9 +632,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "static_css_style_css",
       "community": 2,
-      "norm_label": "style.css"
+      "norm_label": "style.css",
+      "id": "static_css_style_css"
     },
     {
       "label": "prompit.txt",
@@ -636,9 +645,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "id": "prompit_txt",
       "community": 7,
-      "norm_label": "prompit.txt"
+      "norm_label": "prompit.txt",
+      "id": "prompit_txt"
     }
   ],
   "links": [
@@ -648,9 +657,9 @@
       "source_file": "app.py",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_py",
-      "target": "inventariointeligente_app_before_request",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_app_before_request"
     },
     {
       "relation": "contains",
@@ -658,9 +667,9 @@
       "source_file": "app.py",
       "source_location": "L21",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_py",
-      "target": "inventariointeligente_app_teardown_request",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_app_teardown_request"
     },
     {
       "relation": "contains",
@@ -668,9 +677,9 @@
       "source_file": "app.py",
       "source_location": "L28",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_py",
-      "target": "inventariointeligente_app_index",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_app_index"
     },
     {
       "relation": "contains",
@@ -678,9 +687,9 @@
       "source_file": "app.py",
       "source_location": "L34",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_py",
-      "target": "inventariointeligente_app_get_products_api",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_app_get_products_api"
     },
     {
       "relation": "contains",
@@ -688,9 +697,9 @@
       "source_file": "app.py",
       "source_location": "L41",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_py",
-      "target": "inventariointeligente_app_update_product_api",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_app_update_product_api"
     },
     {
       "relation": "contains",
@@ -698,9 +707,9 @@
       "source_file": "app.py",
       "source_location": "L70",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_py",
-      "target": "inventariointeligente_app_ask_assistant_api",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_app_ask_assistant_api"
     },
     {
       "relation": "contains",
@@ -709,7 +718,7 @@
       "source_location": "L189",
       "weight": 1.0,
       "source": "app_py",
-      "target": "js_main_confirminvoice",
+      "target": "inventariointeligente_app_confirm_invoice_api",
       "confidence_score": 1.0
     },
     {
@@ -718,9 +727,19 @@
       "source_file": "app.py",
       "source_location": "L200",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_py",
-      "target": "inventariointeligente_app_setup_database",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_app_setup_database"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app.py",
+      "source_location": "L189",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "app_py",
+      "target": "js_main_confirminvoice"
     },
     {
       "relation": "references",
@@ -788,9 +807,9 @@
       "source_file": "assistant.py",
       "source_location": "L14",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "assistant_py",
-      "target": "inventariointeligente_assistant_get_system_prompt",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_assistant_get_system_prompt"
     },
     {
       "relation": "contains",
@@ -798,9 +817,9 @@
       "source_file": "assistant.py",
       "source_location": "L70",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "assistant_py",
-      "target": "inventariointeligente_assistant_process_user_prompt",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_assistant_process_user_prompt"
     },
     {
       "relation": "shares_data_with",
@@ -819,9 +838,9 @@
       "source_file": "assistant.py",
       "source_location": "L71",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_assistant_process_user_prompt",
-      "target": "inventariointeligente_assistant_get_system_prompt",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_assistant_get_system_prompt"
     },
     {
       "relation": "rationale_for",
@@ -829,9 +848,9 @@
       "source_file": "assistant.py",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_assistant_rationale_15",
-      "target": "inventariointeligente_assistant_get_system_prompt",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_assistant_get_system_prompt"
     },
     {
       "relation": "contains",
@@ -839,9 +858,9 @@
       "source_file": "billing.py",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "billing_py",
-      "target": "inventariointeligente_billing_generate_invoice_preview",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_billing_generate_invoice_preview"
     },
     {
       "relation": "contains",
@@ -849,9 +868,9 @@
       "source_file": "billing.py",
       "source_location": "L53",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "billing_py",
-      "target": "inventariointeligente_billing_create_invoice_from_preview",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_billing_create_invoice_from_preview"
     },
     {
       "relation": "contains",
@@ -859,9 +878,9 @@
       "source_file": "billing.py",
       "source_location": "L95",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "billing_py",
-      "target": "inventariointeligente_billing_get_invoice_details",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_billing_get_invoice_details"
     },
     {
       "relation": "shares_data_with",
@@ -879,9 +898,9 @@
       "source_file": "billing.py",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_billing_rationale_9",
-      "target": "inventariointeligente_billing_generate_invoice_preview",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_billing_generate_invoice_preview"
     },
     {
       "relation": "calls",
@@ -900,9 +919,9 @@
       "source_file": "billing.py",
       "source_location": "L54",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_billing_rationale_54",
-      "target": "inventariointeligente_billing_create_invoice_from_preview",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_billing_create_invoice_from_preview"
     },
     {
       "relation": "calls",
@@ -921,9 +940,9 @@
       "source_file": "db.py",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "db_py",
-      "target": "inventariointeligente_db_get_db_connection",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_get_db_connection"
     },
     {
       "relation": "contains",
@@ -931,9 +950,9 @@
       "source_file": "db.py",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "db_py",
-      "target": "inventariointeligente_db_create_tables",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_create_tables"
     },
     {
       "relation": "contains",
@@ -941,9 +960,9 @@
       "source_file": "db.py",
       "source_location": "L72",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "db_py",
-      "target": "inventariointeligente_db_init_db_with_examples",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_init_db_with_examples"
     },
     {
       "relation": "calls",
@@ -952,9 +971,9 @@
       "source_file": "db.py",
       "source_location": "L23",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_db_create_tables",
-      "target": "inventariointeligente_db_get_db_connection",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_get_db_connection"
     },
     {
       "relation": "calls",
@@ -963,9 +982,9 @@
       "source_file": "db.py",
       "source_location": "L76",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_db_init_db_with_examples",
-      "target": "inventariointeligente_db_get_db_connection",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_get_db_connection"
     },
     {
       "relation": "rationale_for",
@@ -973,9 +992,9 @@
       "source_file": "db.py",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_db_rationale_8",
-      "target": "inventariointeligente_db_get_db_connection",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_get_db_connection"
     },
     {
       "relation": "rationale_for",
@@ -983,9 +1002,9 @@
       "source_file": "db.py",
       "source_location": "L20",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_db_rationale_20",
-      "target": "inventariointeligente_db_create_tables",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_create_tables"
     },
     {
       "relation": "rationale_for",
@@ -993,9 +1012,9 @@
       "source_file": "db.py",
       "source_location": "L73",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_db_rationale_73",
-      "target": "inventariointeligente_db_init_db_with_examples",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_db_init_db_with_examples"
     },
     {
       "relation": "contains",
@@ -1003,9 +1022,9 @@
       "source_file": "inventory.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventory_py",
-      "target": "inventariointeligente_inventory_find_product_by_name",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_find_product_by_name"
     },
     {
       "relation": "contains",
@@ -1013,9 +1032,9 @@
       "source_file": "inventory.py",
       "source_location": "L26",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventory_py",
-      "target": "inventariointeligente_inventory_add_product",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_add_product"
     },
     {
       "relation": "contains",
@@ -1023,9 +1042,9 @@
       "source_file": "inventory.py",
       "source_location": "L50",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventory_py",
-      "target": "inventariointeligente_inventory_delete_product",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_delete_product"
     },
     {
       "relation": "contains",
@@ -1033,9 +1052,9 @@
       "source_file": "inventory.py",
       "source_location": "L64",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventory_py",
-      "target": "inventariointeligente_inventory_update_stock",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_update_stock"
     },
     {
       "relation": "contains",
@@ -1043,9 +1062,9 @@
       "source_file": "inventory.py",
       "source_location": "L88",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventory_py",
-      "target": "inventariointeligente_inventory_update_product_details",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_update_product_details"
     },
     {
       "relation": "contains",
@@ -1053,9 +1072,9 @@
       "source_file": "inventory.py",
       "source_location": "L114",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventory_py",
-      "target": "inventariointeligente_inventory_search_products",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_search_products"
     },
     {
       "relation": "contains",
@@ -1063,9 +1082,9 @@
       "source_file": "inventory.py",
       "source_location": "L121",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventory_py",
-      "target": "inventariointeligente_inventory_get_all_products",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_get_all_products"
     },
     {
       "relation": "calls",
@@ -1074,9 +1093,9 @@
       "source_file": "inventory.py",
       "source_location": "L27",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_inventory_add_product",
-      "target": "inventariointeligente_inventory_find_product_by_name",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_find_product_by_name"
     },
     {
       "relation": "rationale_for",
@@ -1084,9 +1103,9 @@
       "source_file": "inventory.py",
       "source_location": "L51",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "inventariointeligente_inventory_rationale_51",
-      "target": "inventariointeligente_inventory_delete_product",
-      "confidence_score": 1.0
+      "target": "inventariointeligente_inventory_delete_product"
     },
     {
       "relation": "contains",
@@ -1094,9 +1113,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_voicebutton",
-      "confidence_score": 1.0
+      "target": "js_main_voicebutton"
     },
     {
       "relation": "contains",
@@ -1104,9 +1123,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_statustext",
-      "confidence_score": 1.0
+      "target": "js_main_statustext"
     },
     {
       "relation": "contains",
@@ -1114,9 +1133,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_conversationlog",
-      "confidence_score": 1.0
+      "target": "js_main_conversationlog"
     },
     {
       "relation": "contains",
@@ -1124,9 +1143,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_inventorytablebody",
-      "confidence_score": 1.0
+      "target": "js_main_inventorytablebody"
     },
     {
       "relation": "contains",
@@ -1134,9 +1153,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_searchinventoryinput",
-      "confidence_score": 1.0
+      "target": "js_main_searchinventoryinput"
     },
     {
       "relation": "contains",
@@ -1144,9 +1163,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_invoicedisplay",
-      "confidence_score": 1.0
+      "target": "js_main_invoicedisplay"
     },
     {
       "relation": "contains",
@@ -1154,9 +1173,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_chatinput",
-      "confidence_score": 1.0
+      "target": "js_main_chatinput"
     },
     {
       "relation": "contains",
@@ -1164,9 +1183,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L10",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_sendbutton",
-      "confidence_score": 1.0
+      "target": "js_main_sendbutton"
     },
     {
       "relation": "contains",
@@ -1174,9 +1193,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_editproductmodal",
-      "confidence_score": 1.0
+      "target": "js_main_editproductmodal"
     },
     {
       "relation": "contains",
@@ -1184,9 +1203,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L12",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_savechangesbtn",
-      "confidence_score": 1.0
+      "target": "js_main_savechangesbtn"
     },
     {
       "relation": "contains",
@@ -1194,9 +1213,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L14",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_assistanttab",
-      "confidence_score": 1.0
+      "target": "js_main_assistanttab"
     },
     {
       "relation": "contains",
@@ -1204,9 +1223,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_billingtab",
-      "confidence_score": 1.0
+      "target": "js_main_billingtab"
     },
     {
       "relation": "contains",
@@ -1214,9 +1233,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_conversationhistory",
-      "confidence_score": 1.0
+      "target": "js_main_conversationhistory"
     },
     {
       "relation": "contains",
@@ -1224,9 +1243,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L20",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_allproducts",
-      "confidence_score": 1.0
+      "target": "js_main_allproducts"
     },
     {
       "relation": "contains",
@@ -1234,9 +1253,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L30",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_recognition",
-      "confidence_score": 1.0
+      "target": "js_main_recognition"
     },
     {
       "relation": "contains",
@@ -1244,9 +1263,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L35",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_loadvoices",
-      "confidence_score": 1.0
+      "target": "js_main_loadvoices"
     },
     {
       "relation": "contains",
@@ -1254,9 +1273,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L45",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_addmessagetolog",
-      "confidence_score": 1.0
+      "target": "js_main_addmessagetolog"
     },
     {
       "relation": "contains",
@@ -1264,9 +1283,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L55",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_speak",
-      "confidence_score": 1.0
+      "target": "js_main_speak"
     },
     {
       "relation": "contains",
@@ -1274,9 +1293,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L64",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_renderinventory",
-      "confidence_score": 1.0
+      "target": "js_main_renderinventory"
     },
     {
       "relation": "contains",
@@ -1284,9 +1303,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L95",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_renderinvoicepreview",
-      "confidence_score": 1.0
+      "target": "js_main_renderinvoicepreview"
     },
     {
       "relation": "contains",
@@ -1294,9 +1313,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L133",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_addinvoiceactionlisteners",
-      "confidence_score": 1.0
+      "target": "js_main_addinvoiceactionlisteners"
     },
     {
       "relation": "contains",
@@ -1304,9 +1323,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L139",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_fetchallproducts",
-      "confidence_score": 1.0
+      "target": "js_main_fetchallproducts"
     },
     {
       "relation": "contains",
@@ -1314,9 +1333,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L151",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_processcommand",
-      "confidence_score": 1.0
+      "target": "js_main_processcommand"
     },
     {
       "relation": "contains",
@@ -1324,9 +1343,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L200",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_confirminvoice",
-      "confidence_score": 1.0
+      "target": "js_main_confirminvoice"
     },
     {
       "relation": "contains",
@@ -1334,9 +1353,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L201",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_printinvoice",
-      "confidence_score": 1.0
+      "target": "js_main_printinvoice"
     },
     {
       "relation": "contains",
@@ -1344,9 +1363,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L202",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_cancelinvoice",
-      "confidence_score": 1.0
+      "target": "js_main_cancelinvoice"
     },
     {
       "relation": "contains",
@@ -1354,9 +1373,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L225",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_searchterm",
-      "confidence_score": 1.0
+      "target": "js_main_searchterm"
     },
     {
       "relation": "contains",
@@ -1364,9 +1383,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L226",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_filteredproducts",
-      "confidence_score": 1.0
+      "target": "js_main_filteredproducts"
     },
     {
       "relation": "contains",
@@ -1374,9 +1393,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L235",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_editbutton",
-      "confidence_score": 1.0
+      "target": "js_main_editbutton"
     },
     {
       "relation": "contains",
@@ -1384,9 +1403,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L251",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "static_js_main_js",
-      "target": "js_main_updatedproduct",
-      "confidence_score": 1.0
+      "target": "js_main_updatedproduct"
     },
     {
       "relation": "references",
@@ -1405,9 +1424,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L147",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_fetchallproducts",
-      "target": "js_main_addmessagetolog",
-      "confidence_score": 1.0
+      "target": "js_main_addmessagetolog"
     },
     {
       "relation": "calls",
@@ -1416,9 +1435,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L154",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_processcommand",
-      "target": "js_main_addmessagetolog",
-      "confidence_score": 1.0
+      "target": "js_main_addmessagetolog"
     },
     {
       "relation": "calls",
@@ -1427,9 +1446,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L173",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_processcommand",
-      "target": "js_main_speak",
-      "confidence_score": 1.0
+      "target": "js_main_speak"
     },
     {
       "relation": "calls",
@@ -1438,9 +1457,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L144",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_fetchallproducts",
-      "target": "js_main_renderinventory",
-      "confidence_score": 1.0
+      "target": "js_main_renderinventory"
     },
     {
       "relation": "calls",
@@ -1449,9 +1468,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L180",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_processcommand",
-      "target": "js_main_renderinventory",
-      "confidence_score": 1.0
+      "target": "js_main_renderinventory"
     },
     {
       "relation": "calls",
@@ -1460,9 +1479,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L130",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_renderinvoicepreview",
-      "target": "js_main_addinvoiceactionlisteners",
-      "confidence_score": 1.0
+      "target": "js_main_addinvoiceactionlisteners"
     },
     {
       "relation": "calls",
@@ -1471,9 +1490,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L185",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_processcommand",
-      "target": "js_main_renderinvoicepreview",
-      "confidence_score": 1.0
+      "target": "js_main_renderinvoicepreview"
     },
     {
       "relation": "calls",
@@ -1482,9 +1501,9 @@
       "source_file": "static/js/main.js",
       "source_location": "L182",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "js_main_processcommand",
-      "target": "js_main_fetchallproducts",
-      "confidence_score": 1.0
+      "target": "js_main_fetchallproducts"
     },
     {
       "relation": "references",
@@ -1498,5 +1517,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "cb7b75945b5cdac6cb001cf3a0fceca1aac38aea"
+  "built_at_commit": "e6ad6387d0d4871cc4d51cb7282efe85dd3b224a"
 }
